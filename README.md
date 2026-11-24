@@ -12,4 +12,4 @@ The deterministic lending harness is the proposed testnet demo target. The live 
 | Safety and execution | [State machines](docs/STATE_MACHINE.md), [Invariants](docs/INVARIANTS.md), [Threat model](docs/THREAT_MODEL.md), [Reactive integration](docs/REACTIVE_INTEGRATION.md) |
 | Validation | [Network verification](docs/NETWORK_VERIFICATION.md), [Test plan](docs/TEST_PLAN.md), [Demo](docs/DEMO.md), [Roadmap](docs/ROADMAP.md) |
 
-The Foundry scaffold pins Solidity 0.8.29 as the initial Omni-compatible baseline. It includes empty `src/`, `test/` and `script/` directories. With Foundry installed, run `forge config`, `forge build` and `forge test` from the repo root. M0 has no executable protocol or tests.
+The Foundry scaffold pins Solidity 0.8.29 as the initial Omni-compatible baseline. M1-A adds local collateral and liquidity vaults and tests. Use Foundry 1.10.0 and run `forge config`, `forge build` and `forge test` from the repo root. The collateral vault permanently locks deposits in this version. The contracts are for isolated local tests. Public and real-value deployments are prohibited.

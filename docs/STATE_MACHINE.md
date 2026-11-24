@@ -55,3 +55,16 @@ M1 has only Idle. Default does not start settlement. The following design is gat
 | Escrowed → Refunded on Base | Verified finalized exact cancellation; callable by any proof submitter | Return escrow and reopen default to cure or a new settlement sequence, emit `SettlementRefunded` | Terminal ID consumed; failed transfer rolls back. No elapsed-time shortcut. |
 
 A cancellation intent alone never refunds. An assignment receipt alone never proves lender payment. Out-of-order settlement messages can stage or retry by ID. A disagreement or missing outcome keeps escrow and custody frozen pending canonical evidence.
+
+## M1-A transitions
+
+| Component | Transition | Authority and effects |
+|---|---|---|
+| Collateral | Unbound → Bound | Local binder records a nonzero agreement, borrower and exact amount once. Emits `AgreementBound`. |
+| Collateral | Absent → Locked | Bound borrower sends exact ETH. Hash the chain, vault and agreement for the position ID, record the lot and emit `CollateralLocked`. Duplicate locks revert. Locked is terminal in this milestone. |
+| Liquidity consent | Intended commitment → updated/revoked | Lender sets its own cap or zero before a reservation exists. Emits `CommitmentSet`. No cash moves. |
+| Reservation | Absent → Reserved | Manager requires sufficient lender cap and free cash. Consumes consent, transfers free into reserved accounting, emits `LiquidityReserved`. |
+| Reservation | Reserved → Returned | Manager cancels and returns the full reservation to free cash. Emits `ReservationReturned`. |
+| Reservation | Reserved → Consumed | Manager spends a positive amount within the reservation to the fixed consumer. Returns any remainder to free cash and emits `ReservationConsumed`. Transfer failure reverts cash and state. |
+
+Collateral position and reservation IDs hash their type domain, deployment chain ID, vault address and agreement. The deployment chain ID is immutable so an existing agreement keeps its identifier if the runtime chain ID changes. Returned and Consumed are terminal states. Zero IDs, repeated transitions and reentrant mutations revert. M1-A accepts no callback or release proof. Activation, claim, cure and settlement transitions above remain future work.

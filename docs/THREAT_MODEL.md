@@ -15,3 +15,11 @@
 | Unaccounted loss on recovery | Default keeps debt outstanding; Base USDC receipt or an explicitly approved terminal write-off is required. Settlement provider inventory, quotes, receipt proof and dispute resolution are production dependencies. |
 
 Roles include the borrower and lender as term signers, deployment/config owner with narrowly scoped route/adapter setup, guardian, finality signer quorum, public risk samplers/recovery submitters, and future settlement providers. Deploy isolated configurations for test fixtures and real feeds. Incident response halts new risk, preserves proofs, reconciles canonical receipts and retries valid pending operations after correcting funding or configuration. Never use a privileged success override.
+
+## M1-A boundaries and findings
+
+The immutable binder can choose who is allowed to deposit a particular local lot and for what amount. It cannot redirect or release ETH. The one-time binding prevents callers from claiming a known agreement ID before its borrower. Custody has no release entry point. Use isolated test deployments because any ETH accepted by this version stays locked.
+
+The immutable manager cannot withdraw lender cash or choose a transfer destination. It can reserve within the lender's per-agreement cap, return an existing reserve, and consume it once to the immutable consumer. It is trusted to use those powers only for the fixture scenario. A real integration must enforce signed terms, financial conditions, exact applied repayment and debt recording in the manager transaction. No actual funds should be placed under these local authorities.
+
+The vault requires a conventional fixed-supply-behavior ERC-20 reporting honest balances, and it checks both sides of each transfer. Direct token and forced ETH surplus are observable and excluded from withdrawable balances. There is no surplus sweep. The contribution of the fixed consumer is tested as an asset transfer. Production token, adapter, proxy, finalized proof and settlement assumptions remain open.

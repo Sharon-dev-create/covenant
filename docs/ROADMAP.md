@@ -11,3 +11,9 @@
 | Real-value gate | Specify, verify and audit prefunded settlement or verified sale/bridge and dispute path, including partial recovery, collateral/lender safeties, finality trust, and recognized losses. Keep real-value origination disabled pending these results. |
 
 A local harness is feasible based on the specified interfaces. Live demo feasibility remains conditional pending actual callback and finality verification. Aave direct Circle-USDC repayment is ruled out at the pinned blocks. Autonomous lender recovery remains unproven and outside M1.
+
+## M1-A local foundation
+
+The M1a row above describes the broader originally proposed local milestone. The remediation brief narrows M1-A to the two vaults, shared ABI and accounting tests. A local binder and fixture manager/consumer stand in for future signed terms and purpose enforcement. No local release path is included. CreditManager, market harness and cross-chain ingress remain deferred.
+
+Recommended M1-B begins with typed consent and the deterministic market, then verifies purpose-bound repayment, zero-debt close and finalized release locally before a separately authorized Omni smoke test. M2 retains the external market, pricing and settlement gates above. Foundry remediation is complete for local verification. Cross-chain and real-value gates remain open.
