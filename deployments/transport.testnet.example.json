@@ -1,0 +1,182 @@
+{
+  "status": "template",
+  "compiler": {
+    "foundry": "1.10.0",
+    "solc": "0.8.29",
+    "evmVersion": "cancun",
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "viaIR": false
+  },
+  "networks": {
+    "unichain": {
+      "chainId": 1301,
+      "rpc": "https://sepolia.unichain.org",
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "signer": null,
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    },
+    "base": {
+      "chainId": 84532,
+      "rpc": "https://base-sepolia-rpc.publicnode.com",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "signer": null,
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "rpc": "https://lasna-rpc.rnk.dev/",
+      "system": "0x8888888888888888888888888888888888888888",
+      "signer": null,
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    }
+  },
+  "reactive": {
+    "address": null,
+    "deploymentTx": null,
+    "runtimeCodeHash": null,
+    "deploymentGas": null
+  },
+  "reactionFunding": {
+    "reserveWei": null,
+    "fundingTx": null
+  },
+  "payerModel": {
+    "reactiveServiceProvider": "0x8888888888888888888888888888888888888888",
+    "receiverServiceProviderByChain": {
+      "1301": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "84532": "0x476F44b11F5C942c58f4c8E3d0300E5710743585"
+    },
+    "settlement": "pay(uint256) is provider-only; coverDebt() is public; depositTo(address) is preferred"
+  },
+  "retryPolicy": {
+    "protocolAutomaticRedelivery": "not documented by current Omni docs or reviewed library",
+    "applicationReRequests": {
+      "maxAttempts": 3,
+      "delaySeconds": 60,
+      "onlyWhenNoDestinationReceipt": true
+    }
+  },
+  "routes": {
+    "A": {
+      "route": 1,
+      "source": "unichain",
+      "destination": "base",
+      "emitter": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": null,
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 1301,
+        "emitter": null,
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 1,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": []
+    },
+    "B": {
+      "route": 2,
+      "source": "base",
+      "destination": "unichain",
+      "emitter": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": null,
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 84532,
+        "emitter": null,
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 2,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": []
+    },
+    "C": {
+      "route": 3,
+      "source": "base",
+      "destination": "base",
+      "emitter": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": null,
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 84532,
+        "emitter": null,
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 3,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": []
+    }
+  }
+}

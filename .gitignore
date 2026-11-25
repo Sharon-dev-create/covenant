@@ -5,3 +5,8 @@
 .env
 .env.*
 !.env.example
+
+# Keep signer files and local manifests outside version control.
+/keystores/
+/deployments/*.local.json
+*.keystore
