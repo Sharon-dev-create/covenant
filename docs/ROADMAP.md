@@ -19,3 +19,7 @@ The M1a row above describes the broader originally proposed local milestone. The
 ## M1-B transport status
 
 M1-B implements transport only: emitter, receiver and Lasna reactive probes with exact route subscriptions, payer support, replay protection, controlled failure and bounded application-level re-requests. Local tests and read-only network/simulation checks are complete. No transaction has been broadcast. Live evidence, authorization, finality and retry behavior remain pending. Typed consent, deterministic market tests, purpose-bound repayment, zero-debt close and independent finalized release remain future financial gates. [Transport verification](TRANSPORT_VERIFICATION.md) · [Reactive integration](REACTIVE_INTEGRATION.md)
+
+## M2 local financial review
+
+The local credit engine has signed agreement and nonce checks, cash and debt accounting, atomic fixture-market execution, debt servicing, real local lock-only collateral custody and expanded invariant tests. Local readiness remains conditional: an extreme accepted claim can overflow the single-word payoff calculation and needs an explicit reviewed arithmetic-bound remediation. M1-B live callback authentication, delivery and finality, production oracle and market verification, collateral release and lender recovery remain separate unresolved integration gates. No real-value origination is enabled.

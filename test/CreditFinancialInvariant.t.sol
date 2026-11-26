@@ -517,13 +517,107 @@ contract CreditFinancialInvariant {
         invariant_CashAndDebtMatchIndependentLedger();
         handler.repay(0, payment % 100e6, false);
         invariant_CashAndDebtMatchIndependentLedger();
+        _failedRepaymentChecks();
+        invariant_CashAndDebtMatchIndependentLedger();
         handler.donate(donation);
         handler.withdraw(0, donation);
         handler.advance(second % 10 days);
         handler.checkpoint(0);
         invariant_CashAndDebtMatchIndependentLedger();
+        handler.advance(29 days);
+        handler.advance(29 days);
+        handler.advance(29 days);
+        handler.advance(29 days);
+        handler.markDefault(0);
+        invariant_CashAndDebtMatchIndependentLedger();
+        handler.repay(0, 1, false);
+        invariant_CashAndDebtMatchIndependentLedger();
         handler.repay(0, 0, true);
         invariant_CashAndDebtMatchIndependentLedger();
+    }
+
+    function testDeterministicMultiAgreementCampaign() public {
+        uint8[3] memory seeds = [uint8(0), uint8(1), uint8(2)];
+        for (uint256 i; i < seeds.length; i++) {
+            handler.register(seeds[i]);
+            invariant_CashAndDebtMatchIndependentLedger();
+            handler.activate(i);
+            invariant_CashAndDebtMatchIndependentLedger();
+        }
+        for (uint256 i; i < seeds.length; i++) {
+            handler.observe(i);
+            invariant_CashAndDebtMatchIndependentLedger();
+            handler.execute(i);
+            invariant_CashAndDebtMatchIndependentLedger();
+        }
+        handler.advance(1 days);
+        for (uint256 i; i < seeds.length; i++) {
+            handler.checkpoint(i);
+            invariant_CashAndDebtMatchIndependentLedger();
+            handler.repay(i, uint64(1e6 + i), false);
+            invariant_CashAndDebtMatchIndependentLedger();
+            handler.repay(i, 0, true);
+            invariant_CashAndDebtMatchIndependentLedger();
+        }
+        handler.execute(0); // Deliberately ineligible, measured separately.
+        _report(handler.register.selector);
+        _report(handler.activate.selector);
+        _report(handler.observe.selector);
+        _report(handler.execute.selector);
+        _report(handler.checkpoint.selector);
+        _report(handler.repay.selector);
+        assert(handler.transitionCounts("reservation") == 3);
+        assert(handler.transitionCounts("partialRepay") == 3);
+        assert(handler.transitionCounts("fullRepay") == 3);
+    }
+
+    function _repaymentSnapshot(FinancialHandler.Ghost memory g, bytes32 paymentId) private view returns (bytes32) {
+        CreditManager manager = handler.manager();
+        (, CreditManager.State state,) = manager.agreement(g.id);
+        return keccak256(
+            abi.encode(
+                manager.principal(g.id),
+                manager.accruedInterest(g.id),
+                manager.interestRemainder(g.id),
+                manager.lastAccrued(g.id),
+                manager.totalInterestAccrued(g.id),
+                manager.totalInterestPaid(g.id),
+                manager.totalPrincipalPaid(g.id),
+                handler.vault().free(g.lender),
+                handler.token().balanceOf(address(handler.vault())),
+                handler.vault().repaymentUsed(paymentId),
+                state
+            )
+        );
+    }
+
+    function _failedRepaymentChecks() private {
+        FinancialHandler.Ghost memory g = handler.loan(0);
+        uint256 nonce = handler.paymentNonce() + 1;
+        bytes32 paymentId =
+            keccak256(abi.encode("REPAYMENT_V1", block.chainid, address(handler.manager()), g.id, g.borrower, nonce));
+        handler.token().mint(g.borrower, 1);
+        vm.prank(g.borrower);
+        handler.token().approve(address(handler.vault()), 1);
+        bytes32 before_ = _repaymentSnapshot(g, paymentId);
+        handler.token().configure(true, false, address(0));
+        vm.prank(g.borrower);
+        (bool ok,) = address(handler.manager()).call(abi.encodeCall(handler.manager().repay, (g.id, 1, nonce)));
+        assert(!ok && _repaymentSnapshot(g, paymentId) == before_);
+        handler.token().configure(false, false, address(0));
+        vm.prank(g.borrower);
+        (ok,) =
+            address(handler.manager()).call(abi.encodeCall(handler.manager().repay, (g.id, type(uint256).max, nonce)));
+        assert(!ok && _repaymentSnapshot(g, paymentId) == before_);
+        uint256 previous = handler.paymentNonce();
+        bytes32 used = keccak256(
+            abi.encode("REPAYMENT_V1", block.chainid, address(handler.manager()), g.id, g.borrower, previous)
+        );
+        assert(handler.vault().repaymentUsed(used));
+        bytes32 beforeUsed = _repaymentSnapshot(g, used);
+        vm.prank(g.borrower);
+        (ok,) = address(handler.manager()).call(abi.encodeCall(handler.manager().repay, (g.id, 1, previous)));
+        assert(!ok && _repaymentSnapshot(g, used) == beforeUsed);
     }
 
     struct SelectorTarget {
