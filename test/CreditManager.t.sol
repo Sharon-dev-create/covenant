@@ -78,6 +78,8 @@ contract CreditManagerTest {
             vm.addr(BORROWER_KEY),
             bytes32(uint256(1)),
             500e6,
+            200e6,
+            11e17,
             1,
             10,
             11000,
@@ -318,11 +320,27 @@ contract CreditManagerTest {
 
     function testExternalSigningVector() public view {
         assert(address(manager) == 0x5B0091f49210e7B2A57B03dfE1AB9D08289d9294);
-        assert(manager.TERMS_TYPEHASH() == 0x6784f511a0eeae862904d845b9ab1a33450659011f64eb82cba153afb8330b7e);
-        assert(manager.termsHash(terms) == 0xbb1a419a9fcdfb61d1d7f9abf47bbd0f65fa181130e8ef2c5b5a7f781385f869);
-        assert(manager.digest(terms) == 0xf40598a4bb03e32dcbf429b7f62ea8b07419291ac7953df04df7756a8a2a4816);
-        assert(manager.agreementId(terms) == 0x925075b49285f768cde89aa84ca36bfda08742824def1529a66ef0203c87890a);
-        assert(terms.lotId == 0x525ed2e15102a7abca4da5ddc72f898a6083baefbc64e5776a3934f42390c3e5);
+        assert(manager.TERMS_TYPEHASH() == 0x669c38bed1ae421d32d2b337fb86ee03fb2ce82f79fedaf8c20d96b007d63523);
+        assert(manager.termsHash(terms) == 0x68a098dca601dc92404b99a70d5c8e02dc28048d718c566e111f51c8a4b2f95a);
+        assert(manager.digest(terms) == 0x5f96effdd1145a4f26cb13636e71ec8a15c7455e8c2124b53494d6f476c22f76);
+        assert(manager.agreementId(terms) == 0x9a6feae81eb522ed255e907548fac414b691acb459ec64dd14c01cc0bcab4a79);
+        assert(terms.lotId == 0x1ed0ed3f7ed90759e91a056a5dd284c0e95bd503ea9478e16fc14a00553a5eba);
+    }
+
+    function testAutonomousConditionsAreBoundByBothSignatures() public {
+        bytes memory borrowerSig = _signature(BORROWER_KEY);
+        bytes memory lenderSig = _signature(LENDER_KEY);
+        terms.autonomousRepayment += 1;
+        _updateLot();
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        terms.autonomousRepayment -= 1;
+        terms.maxHealth -= 1;
+        _updateLot();
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedBorrowerNonce(terms.borrower, terms.borrowerNonce));
+        assert(!manager.usedLenderNonce(terms.lender, terms.lenderNonce));
     }
 
     function testIndependentNonceReuseAndFailureAtomicity() public {

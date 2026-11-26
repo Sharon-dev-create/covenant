@@ -60,6 +60,8 @@ contract CreditManager {
         address debtor;
         bytes32 policy;
         uint256 cap;
+        uint256 autonomousRepayment;
+        uint256 maxHealth;
         uint256 borrowerNonce;
         uint256 lenderNonce;
         uint64 consentDeadline;
@@ -76,7 +78,7 @@ contract CreditManager {
     }
 
     bytes32 public constant TERMS_TYPEHASH = keccak256(
-        "Terms(address borrower,address lender,address collateralVault,uint256 collateralChainId,bytes32 lotId,uint256 collateralAmount,address market,address debtor,bytes32 policy,uint256 cap,uint256 borrowerNonce,uint256 lenderNonce,uint64 consentDeadline,uint64 drawDeadline,uint64 maturity,uint64 grace,uint16 ltvBps)"
+        "Terms(address borrower,address lender,address collateralVault,uint256 collateralChainId,bytes32 lotId,uint256 collateralAmount,address market,address debtor,bytes32 policy,uint256 cap,uint256 autonomousRepayment,uint256 maxHealth,uint256 borrowerNonce,uint256 lenderNonce,uint64 consentDeadline,uint64 drawDeadline,uint64 maturity,uint64 grace,uint16 ltvBps)"
     );
     bytes32 private constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -105,6 +107,7 @@ contract CreditManager {
     event BorrowerNonceInvalidated(address indexed borrower, uint256 indexed nonce);
     event LenderNonceInvalidated(address indexed lender, uint256 indexed nonce);
     event RiskObserved(bytes32 indexed agreementId, bytes32 indexed operationId, uint64 epoch);
+    event RiskCleared(bytes32 indexed agreementId, bytes32 indexed operationId);
     event DrawExecuted(bytes32 indexed agreementId, bytes32 indexed operationId, uint256 principal, uint256 timestamp);
 
     constructor(
@@ -155,7 +158,7 @@ contract CreditManager {
 
     function digest(Terms calldata terms) public view returns (bytes32) {
         bytes32 domain =
-            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Covenant"), keccak256("2"), block.chainid, address(this)));
+            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Covenant"), keccak256("3"), block.chainid, address(this)));
         return keccak256(abi.encodePacked("\x19\x01", domain, termsHash(terms)));
     }
 
@@ -167,8 +170,9 @@ contract CreditManager {
         if (
             terms.borrower == address(0) || terms.lender == address(0) || terms.collateralVault == address(0)
                 || terms.collateralChainId == 0 || terms.collateralAmount == 0 || terms.market == address(0)
-                || terms.debtor != terms.borrower || terms.policy == bytes32(0) || terms.cap == 0 || terms.ltvBps == 0
-                || terms.ltvBps > 5000 || terms.consentDeadline < block.timestamp
+                || terms.debtor != terms.borrower || terms.policy != bytes32(uint256(1)) || terms.cap == 0
+                || terms.autonomousRepayment == 0 || terms.autonomousRepayment > terms.cap || terms.maxHealth == 0
+                || terms.ltvBps == 0 || terms.ltvBps > 5000 || terms.consentDeadline < block.timestamp
                 || terms.drawDeadline <= block.timestamp || terms.maturity <= terms.drawDeadline
         ) revert InvalidTerms();
         bytes32 expectedLot =
@@ -204,18 +208,37 @@ contract CreditManager {
         if (a.state != State.Active || block.timestamp >= a.terms.drawDeadline || pendingDraw[id] != bytes32(0)) {
             revert InvalidState();
         }
-        if (!ILocalMarket(a.terms.market).isDistressed(a.terms.borrower)) revert InvalidExecution();
+        if (
+            !_riskSatisfied(a.terms)
+                || ILocalMarket(a.terms.market).debt(a.terms.borrower) < a.terms.autonomousRepayment
+        ) revert InvalidExecution();
         uint64 epoch = ++riskEpoch[id];
         operationId = keccak256(abi.encode("DRAW_V1", block.chainid, address(this), id, epoch));
         pendingDraw[id] = operationId;
         emit RiskObserved(id, operationId, epoch);
     }
 
-    /// @notice Local fixture execution only. The borrower authorizes the bounded action.
+    function clearRecoveredRisk(bytes32 id) external nonReentrant {
+        Agreement storage a = agreements[id];
+        bytes32 operationId = pendingDraw[id];
+        if (a.state != State.Active || operationId == bytes32(0)) revert InvalidState();
+        if (
+            _riskSatisfied(a.terms)
+                && ILocalMarket(a.terms.market).debt(a.terms.borrower) >= a.terms.autonomousRepayment
+        ) revert InvalidExecution();
+        delete pendingDraw[id];
+        emit RiskCleared(id, operationId);
+    }
+
+    function _riskSatisfied(Terms storage t) private view returns (bool) {
+        ILocalMarket market = ILocalMarket(t.market);
+        return market.isDistressed(t.borrower) && market.health(t.borrower) <= t.maxHealth;
+    }
+
+    /// @notice Local fixture execution. Signed terms specify risk threshold and exact repayment.
     function executePending(bytes32 id, bytes32 operationId, uint256 amount) external nonReentrant {
         Agreement storage a = agreements[id];
         Terms storage t = a.terms;
-        if (msg.sender != t.borrower) revert InvalidAuthorization();
         if (
             a.state != State.Active || block.timestamp >= t.drawDeadline || operationId == bytes32(0)
                 || pendingDraw[id] != operationId || completedDraw[operationId]
@@ -242,13 +265,13 @@ contract CreditManager {
         ILocalAdapter adapter = ILocalAdapter(localAdapter);
         if (
             t.debtor != t.borrower || market.asset() != asset || adapter.asset() != asset
-                || adapter.market() != t.market || !market.isDistressed(t.borrower)
+                || adapter.market() != t.market || !_riskSatisfied(t)
         ) revert InvalidExecution();
         (address lender, bytes32 agreementId_, uint256 reserved, ReservationState state) =
             CreditLiquidityVault(vault).reservations(a.reservationId);
         if (
-            lender != t.lender || agreementId_ != id || state != ReservationState.Reserved || amount == 0
-                || amount > reserved || amount > t.cap || amount > limit
+            lender != t.lender || agreementId_ != id || state != ReservationState.Reserved
+                || amount != t.autonomousRepayment || amount > reserved || amount > t.cap || amount > limit
         ) revert InvalidExecution();
         if (amount > market.debt(t.borrower)) revert InvalidExecution();
     }

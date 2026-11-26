@@ -3,6 +3,8 @@ pragma solidity 0.8.29;
 
 /// @dev Local test input only. This is not source-chain finality verification.
 contract LocalCollateralFixture {
+    address public immutable operator = msg.sender;
+
     struct Evidence {
         bytes32 lot;
         address borrower;
@@ -11,6 +13,7 @@ contract LocalCollateralFixture {
     mapping(bytes32 => Evidence) public evidence;
 
     function set(bytes32 id, bytes32 lot, address borrower, uint256 amount) external {
+        require(msg.sender == operator);
         evidence[id] = Evidence(lot, borrower, amount);
     }
 
@@ -21,10 +24,12 @@ contract LocalCollateralFixture {
 }
 
 contract LocalOracleFixture {
+    address public immutable operator = msg.sender;
     uint256 public value;
     uint256 public updatedAt;
 
     function set(uint256 value_, uint256 updatedAt_) external {
+        require(msg.sender == operator);
         value = value_;
         updatedAt = updatedAt_;
     }
@@ -44,6 +49,7 @@ interface IFixtureToken {
 /// @dev Deterministic adversarial market for local tests only.
 contract LocalLendingMarket {
     address public immutable asset;
+    address public immutable operator;
     mapping(address => uint256) public debt;
     mapping(address => uint256) public collateral;
     bool public fail;
@@ -51,14 +57,17 @@ contract LocalLendingMarket {
 
     constructor(address asset_) {
         asset = asset_;
+        operator = msg.sender;
     }
 
     function setPosition(address borrower, uint256 debt_, uint256 collateral_) external {
+        require(msg.sender == operator);
         debt[borrower] = debt_;
         collateral[borrower] = collateral_;
     }
 
     function configure(bool fail_, bool partial_) external {
+        require(msg.sender == operator);
         fail = fail_;
         partialMode = partial_;
     }
@@ -86,6 +95,7 @@ contract LocalLendingMarket {
 contract LocalRepaymentAdapter {
     address public immutable asset;
     address public immutable market;
+    address public immutable operator;
     bool public lie;
     bool public falseSuccess;
     bool public reenter;
@@ -99,11 +109,13 @@ contract LocalRepaymentAdapter {
     constructor(address asset_, address market_) {
         asset = asset_;
         market = market_;
+        operator = msg.sender;
     }
 
     function configure(bool lie_, bool falseSuccess_, bool reenter_, address manager_, bytes32 id_, bytes32 operation_)
         external
     {
+        require(msg.sender == operator);
         lie = lie_;
         falseSuccess = falseSuccess_;
         reenter = reenter_;
@@ -113,6 +125,7 @@ contract LocalRepaymentAdapter {
     }
 
     function configurePost(bool leaveAllowance_, bool addResidual_) external {
+        require(msg.sender == operator);
         leaveAllowance = leaveAllowance_;
         addResidual = addResidual_;
     }

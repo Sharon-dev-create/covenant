@@ -24,6 +24,12 @@ interface ExecutionVm {
     function clearMockedCalls() external;
 }
 
+contract LocalExecutor {
+    function execute(CreditManager manager, bytes32 agreementId, bytes32 operation, uint256 amount) external {
+        manager.executePending(agreementId, operation, amount);
+    }
+}
+
 contract CreditExecutionTest {
     ExecutionVm constant vm = ExecutionVm(address(uint160(uint256(keccak256("hevm cheat code")))));
     MockUSDC token;
@@ -63,6 +69,8 @@ contract CreditExecutionTest {
             borrower,
             bytes32(uint256(1)),
             500e6,
+            200e6,
+            11e17,
             1,
             10,
             11000,
@@ -114,6 +122,61 @@ contract CreditExecutionTest {
         manager.executePending(id, op, 1);
     }
 
+    function testNonBorrowerExecutorAndCompetingExecutor() public {
+        LocalExecutor executor = new LocalExecutor();
+        executor.execute(manager, id, op, 200e6);
+        assert(manager.principal(id) == 200e6 && market.debt(borrower) == 600e6);
+        assert(vault.free(lender) == 400e6 && vault.reserved(lender) == 0);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.executePending(id, op, 200e6);
+    }
+
+    function testRecoveredPositionClearsPendingAndCanReobserve() public {
+        market.setPosition(borrower, 800e6, 1000e6);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        manager.executePending(id, op, 200e6);
+        _unchanged();
+        bytes32 old = op;
+        vm.prank(address(0xBEEF));
+        manager.clearRecoveredRisk(id);
+        assert(manager.pendingDraw(id) == bytes32(0));
+        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        manager.observeRisk(id);
+        market.setPosition(borrower, 800e6, 840e6);
+        bytes32 next = manager.observeRisk(id);
+        assert(next != old);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.executePending(id, old, 200e6);
+        vm.prank(address(0xBEEF));
+        manager.executePending(id, next, 200e6);
+        assert(manager.principal(id) == 200e6);
+    }
+
+    function testArbitraryCallerCannotManipulateOrOverwriteRisk() public {
+        vm.prank(address(0xBEEF));
+        vm.expectRevert();
+        market.setPosition(borrower, 800e6, 840e6);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert();
+        oracle.set(1e30, block.timestamp);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert();
+        collateral.set(id, terms.lotId, borrower, 100 ether);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.observeRisk(id);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        manager.clearRecoveredRisk(id);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        manager.executePending(id, op, 199e6);
+        _unchanged();
+    }
+
     function testExecutionFailuresRollbackAndRetry() public {
         market.configure(true, false);
         vm.prank(borrower);
@@ -144,8 +207,8 @@ contract CreditExecutionTest {
 
     function testEligibilityAndPrice() public {
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
-        manager.executePending(id, op, 200e6);
+        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        manager.executePending(id, op, 1);
         vm.prank(borrower);
         vm.expectRevert(CreditManager.InvalidState.selector);
         manager.executePending(id, bytes32(uint256(2)), 200e6);
