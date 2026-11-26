@@ -29,3 +29,24 @@ For total vault cash `B`, free `F`, reserved `R` and unsolicited surplus `S`, ma
 `managedCash = totalFree + totalReserved`. The measured vault balance also includes `surplus = tokenBalance - managedCash`. Surplus confers no withdrawal rights. Deposits require exact sender debit and exact vault credit. Withdrawals and consumption require exact vault debit and exact recipient credit. Fee-on-transfer tokens and elastic supplies are outside the supported asset assumptions. An unused consent cap is revocable, while a reservation removes cash from the lender's free balance.
 
 A successful local consumption closes the reservation in one transaction, reduces vault cash by the exact transfer, and returns any unused reserve to free. It tests cash movement with a fixture consumer. M1-A records no receivables, interest or LTV enforcement. A future manager must book principal only after a successful purpose-bound repayment. Outstanding receivables are amounts owed by borrowers. They sit outside free cash, reserved cash and the balance available for withdrawal or reservation. Only measured repayment received by the vault can increase lender cash. The proposed 50% maximum initial LTV, 5% simple annual rate, zero commitment fee and one non-revolving draw remain the target model.
+
+## Enforced M2 financial operating envelope
+
+The local manager now enforces, in bytecode and before an agreement can exist:
+
+| Limit | Enforced value | Enforcement point |
+|---|---:|---|
+| Commitment (`terms.cap`) | 1,000,000 USDC = 1,000,000,000,000 base units | `register`, before nonce consumption or reservation |
+| Principal / exact draw (`terms.autonomousRepayment`) | 1,000,000 USDC = 1,000,000,000,000 base units | `register`, rechecked in `_validateDraw` before principal creation |
+| Asset | six-decimal USDC-compatible token | manager constructor checks `decimals() == 6`; exact balance deltas remain mandatory |
+| APR | fixed simple 5%, `APR_BPS = 500` | immutable constant; no per-agreement rate field |
+| Contractual term | `maturity - drawDeadline <= 365 days` | `register`; grace is post-maturity and does not extend the contractual term |
+| Timestamp representation | uint64 | all recorded draw/accrual timestamps and all deadline comparisons use checked uint64 conversion |
+
+Interest accrues from the draw timestamp on outstanding principal only, continues after maturity and after `markDefault`, and remains repayable until the debt is actually paid. The contractual 365-day term is **not** an interest cutoff. The supported interest accrual period is the full uint64 timestamp range (`MAX_ACCRUAL_SECONDS = 2^64 - 1`), because both the checkpoint and the draw timestamp are checked uint64 values. No interest saturation, debt forgiveness, silent truncation or arbitrary cutoff was introduced.
+
+### Arithmetic bounds
+
+Let `P <= 1e12`, `T = 2^64 - 1`, `R < D` and `D = 630720000 = 10000 * 365 days / 500`. For elapsed seconds `t <= T`, the checkpoint increment is `floor((P*t + R)/D)` with remainder `(P*t + R) mod D`. The largest tail product is `(D-1)^2 < 3.98e17`; the largest quotient products are below `2^76`. Because the carry recurrence telescopes, cumulative recognized interest across any number of checkpoints equals `floor(P*(now - draw)/D)` from a zero initial carry, bounded by `MAX_SUPPORTED_INTEREST = 29247120867753601621956` base units. The full claim, including the single final rounding unit, is at most `MAX_SUPPORTED_CLAIM = 29247120868753601621956`, roughly `2.5e-56` of `2^256 - 1`. Principal paid is bounded by the original principal; interest paid and cumulative accrued interest are bounded by the interest bound. Vault aggregates use checked uint256 arithmetic and exact token receipts, so no supported lifecycle value can wrap silently.
+
+The previous model permitted a signed and funded extreme cap. With `P = floor((2^256 - 1)/2)` and `t = D`, the single-word claim reached `2^256 - 2`; one second later `debtPreview` and every repayment reverted, making an accepted obligation unpayable. The new envelope rejects that agreement at signature submission, before any state or liquidity is committed, while preserving normal-value behavior.

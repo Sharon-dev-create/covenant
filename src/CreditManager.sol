@@ -99,12 +99,10 @@ contract CreditManager {
     /// @notice Timestamps are represented as uint64. Interest may accrue over the entire representable range.
     uint256 public constant MAX_ACCRUAL_SECONDS = uint256(type(uint64).max);
     /// @notice Tight upper bound on whole-unit interest for one maximum principal over the full uint64 range.
-    uint256 public constant MAX_SUPPORTED_INTEREST =
-        (MAX_PRINCIPAL / INTEREST_DENOMINATOR) * MAX_ACCRUAL_SECONDS
-            + (MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS / INTEREST_DENOMINATOR)
-            + ((MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS % INTEREST_DENOMINATOR))
-                / INTEREST_DENOMINATOR
-            + 1;
+    uint256 public constant MAX_SUPPORTED_INTEREST = (MAX_PRINCIPAL / INTEREST_DENOMINATOR) * MAX_ACCRUAL_SECONDS
+        + (MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS / INTEREST_DENOMINATOR)
+        + ((MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS % INTEREST_DENOMINATOR)) / INTEREST_DENOMINATOR
+        + 1;
     uint256 public constant MAX_SUPPORTED_CLAIM = MAX_PRINCIPAL + MAX_SUPPORTED_INTEREST;
 
     address public immutable vault;
@@ -159,8 +157,7 @@ contract CreditManager {
                 || localCollateralVerifier_.code.length == 0 || localOracle_.code.length == 0
                 || localAdapter_ == address(0)
         ) revert InvalidTerms();
-        (bool decimalsOk, bytes memory decimalsResult) =
-            asset_.staticcall(abi.encodeCall(IExecutionToken.decimals, ()));
+        (bool decimalsOk, bytes memory decimalsResult) = asset_.staticcall(abi.encodeCall(IExecutionToken.decimals, ()));
         if (!decimalsOk || decimalsResult.length != 32 || abi.decode(decimalsResult, (uint8)) != 6) {
             revert InvalidTerms();
         }
@@ -225,9 +222,8 @@ contract CreditManager {
                 || terms.debtor != terms.borrower || terms.policy != bytes32(uint256(1)) || terms.cap == 0
                 || terms.cap > MAX_COMMITMENT || terms.autonomousRepayment == 0
                 || terms.autonomousRepayment > MAX_PRINCIPAL || terms.autonomousRepayment > terms.cap
-                || terms.maxHealth == 0 || terms.ltvBps == 0 || terms.ltvBps > 5000
-                || terms.consentDeadline < now_ || terms.drawDeadline <= now_
-                || terms.maturity <= terms.drawDeadline
+                || terms.maxHealth == 0 || terms.ltvBps == 0 || terms.ltvBps > 5000 || terms.consentDeadline < now_
+                || terms.drawDeadline <= now_ || terms.maturity <= terms.drawDeadline
                 || uint256(terms.maturity) - uint256(terms.drawDeadline) > uint256(MAX_TERM)
         ) revert InvalidTerms();
         bytes32 expectedLot =
@@ -317,7 +313,9 @@ contract CreditManager {
             revert InvalidCollateral();
         }
         (uint256 value, uint256 updatedAt) = ILocalCollateralOracle(localOracle).valueUSDC(t.collateralAmount);
-        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
+        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) {
+            revert InvalidPrice();
+        }
         uint256 limit = value / 10000 * t.ltvBps + (value % 10000) * t.ltvBps / 10000;
         ILocalMarket market = ILocalMarket(t.market);
         ILocalAdapter adapter = ILocalAdapter(localAdapter);
@@ -462,11 +460,7 @@ contract CreditManager {
         return _previewInterestAt(id, checkedTimestamp(block.timestamp));
     }
 
-    function _previewInterestAt(bytes32 id, uint64 now_)
-        private
-        view
-        returns (uint256 interest, uint256 remainder)
-    {
+    function _previewInterestAt(bytes32 id, uint64 now_) private view returns (uint256 interest, uint256 remainder) {
         interest = accruedInterest[id];
         remainder = interestRemainder[id];
         uint64 last = lastAccrued[id];
@@ -491,7 +485,9 @@ contract CreditManager {
         if (!ILocalCollateralVerifier(localCollateralVerifier)
                 .verify(id, terms.lotId, terms.borrower, terms.collateralAmount)) revert InvalidCollateral();
         (uint256 value, uint256 updatedAt) = ILocalCollateralOracle(localOracle).valueUSDC(terms.collateralAmount);
-        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
+        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) {
+            revert InvalidPrice();
+        }
         if (terms.cap > value / 10000 * terms.ltvBps + (value % 10000) * terms.ltvBps / 10000) revert InvalidPrice();
         agreement.state = State.Active;
         agreement.reservationId = CreditLiquidityVault(vault).reserve(id, terms.lender, terms.cap);

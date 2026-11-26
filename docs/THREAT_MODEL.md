@@ -45,3 +45,11 @@ One operation per sequence is enforced in both the reaction and receiver. Indepe
 ### M2-E local testing limitation
 
 Local mock-based accounting checks do not authenticate a live collateral observation or a production oracle and market response. Compromise or incorrect behavior of those external dependencies remains outside the guarantees established by the M2-E local reference model; see `M2_SECURITY_VERIFICATION.md`.
+
+## Arithmetic threat closure and residual assumptions
+
+The reproduced Medium finding was an accepted extreme obligation whose full claim exceeded uint256, so preview and all repayment paths reverted. Root cause: registration had no value envelope and the single-word claim formation assumed an unproven principal/time range. Remediation rejects unsupported commitments, principal amounts, terms and timestamp representations at registration, before signatures are consumed and before liquidity is reserved. It does not change the version 3 EIP-712 schema, role nonces, authorization, market repayment checks or repayment allocation.
+
+Residual local findings: none newly confirmed after the remediation. Formal proof of absence of defects is not claimed; coverage is not a substitute for an independent audit. Timestamp behavior relies on the chain's monotonic uint64-representable clock; an invalid or backwards clock fails closed. The LTV oracle and the collateral, market and adapter fixtures remain privileged local inputs and are not independent sources of truth.
+
+External trust assumptions unchanged: Omni proxy identity and injected Reactive sender, Reactive liveness and fee funding, source-chain finality attestation, production oracle feeds and sequencer handling, an asset-compatible non-rebasing six-decimal token, the reviewed market/adapter implementation and accounting, and a future recovery or liquidation path. No live transport, production oracle, production market, collateral release or real-value origination is enabled by M2.

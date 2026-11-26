@@ -28,4 +28,14 @@ For each lender, free plus reserved equals accounted cash belonging to that lend
 
 ### M2-E local reference-model scope
 
-`CreditFinancialInvariant` compares independent lender and agreement ledgers with the local vault and manager. The model checks actual local custody, while cross-chain collateral observations remain mocks. Handler invocation counts include calls that return before a transition; see `M2_SECURITY_VERIFICATION.md` for the remaining verification work.
+`CreditFinancialInvariant` compares independent lender and agreement ledgers with the local vault and manager. The model checks actual local custody, while cross-chain collateral observations remain mocks. Handler invocation counts include calls that return before a transition; see `M2_SECURITY_VERIFICATION.md` for the verification record.
+
+## Financial-envelope and representation invariants
+
+- An agreement exists only if `cap <= 1e12`, `autonomousRepayment <= min(cap, 1e12)`, `maturity - drawDeadline <= 365 days`, and the asset reported six decimals at construction. Rejection leaves both role nonces, lot bindings, reservations and lender cash unchanged.
+- Principal is created only by an exact, verified market repayment and is never greater than `MAX_PRINCIPAL`. A draw amount above the principal ceiling reverts before any vault debit, approval or market interaction.
+- `drawTimestamp`, `lastAccrued` and every chain timestamp used for a financial decision are checked uint64 values. A timestamp above `2^64 - 1` or earlier than the last checkpoint reverts `InvalidTimestamp`; no wraparound or truncation is observable.
+- For every reachable checkpoint, `accruedInterest + interestPaid = totalInterestAccrued`, `interestRemainder < D`, and `principal + totalPrincipalPaid` equals the verified draw. The carry telescopes across arbitrary checkpoint partitions; repeated checkpoints at the same timestamp add zero.
+- `totalInterestAccrued <= MAX_SUPPORTED_INTEREST`, `principal + accruedInterest + (remainder == 0 ? 0 : 1) <= MAX_SUPPORTED_CLAIM`, and no uint256 intermediate in the decomposed interest expression can overflow. Interest continues after default and maturity; there is no accrual cutoff or saturation.
+- Final payoff crystallizes at most one carry unit, once. A closed agreement has zero principal, zero accrued interest and zero remainder; a repeated payoff reverts.
+- Repayment after default, interest-first allocation, exact measured lender credit, single-use payment IDs, replay protection, collateral isolation and transaction rollback are unchanged by the envelope.

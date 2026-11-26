@@ -104,3 +104,44 @@ During the M2-F verification run, HEAD changed from `abcf690c2b26f8954fb54e824ad
 M2-F final command results: formatting and forced build passed; the complete `forge test -vvv` and `forge test --fuzz-runs 1000` runs each passed 97 tests with zero failures and skips. Coverage completed successfully, with financial-contract percentages unchanged from the table above. The test count includes inherited execution regressions in the new boundary test contract. Foundry still emits the documented compiler, lint, invariant-discovery and coverage instrumentation warnings.
 
 The final financial invariant campaign passed with seed `0x1234`, 1,000 runs, depth 128, 128,000 handler invocations, zero reverts and zero discards. Per-selector call counts are the same as the earlier seed table and remain distinct from the deterministic successful-transition counts.
+
+## M2-G final arithmetic remediation and verification
+
+Verification baseline `70ecd70005c5fe8d872ce825d6cf61d781f7cda6`; the manager remediation was committed externally during this work as `8ce97bd6227577bc4ded48037bd0eeb2dea5f9b` (subject `running invariant tests`) together with additional test/document work. Final local verification was run on that revision plus the uncommitted formatting and test refinements described below. This review is local testing, **not** an independent security audit.
+
+### Vulnerability and root cause
+
+The reproduced Medium finding was `testExtremeValidDrawCanBecomeUnpayableWhenClaimExceedsUint256`: a signed, activated and drawn agreement with principal `floor((2^256 - 1)/2)` formed a full claim of `2^256 - 2` after `D = 630720000` seconds, and one second later `debtPreview` and every repayment amount reverted on checked arithmetic. The root cause was the absence of a financial value envelope: registration accepted any cap, and the single-word `principal + interest + rounding` expression was assumed representable without proof over an unbounded principal and elapsed-time domain. A principal cap alone is insufficient because interest continues indefinitely after default.
+
+### Implemented remediation
+
+`CreditManager` now rejects an unsupported agreement inside `register`, before signatures are consumed, the lot is bound or liquidity is reserved: `cap <= 1e12`, `autonomousRepayment <= min(cap, 1e12)`, `maturity - drawDeadline <= 365 days`, and a checked uint64 chain timestamp. The constructor checks that the immutable asset reports six decimals. `_validateDraw` repeats the principal ceiling before any vault debit or market call. `drawTimestamp` and `lastAccrued` are uint64, and `checkedTimestamp` rejects values above `2^64 - 1`; `debtPreview`, checkpoints, repayments, default, activation, observation and expiry all use the checked representation. An elapsed interval is computed only after verifying `now >= lastAccrued`. Interest still accrues after maturity and default over the full uint64 range; no cutoff, saturation, forgiveness or truncation was added.
+
+The version 3 EIP-712 type hash, domain, normalized lot derivation, agreement ID, role-specific nonces, deterministic signing vector, autonomous execution authorization, exact market repayment, atomic principal creation, interest-first allocation, fractional carry, measured lender credit, repayment after default, collateral custody and rollback behavior are unchanged.
+
+### Mathematical safety proof
+
+With `P <= 1e12 < 2^40`, `t <= 2^64 - 1`, carry `R < D` and `D = 630720000`, every decomposed product in `_previewInterestAt` is far below `2^256`: the tail `(P mod D) * (t mod D) + R < D^2 < 3.98e17`, and the quotient products are below `2^76`. The carry recurrence telescopes, so cumulative recognized interest at any number of checkpoints equals `floor(P * (now - draw) / D)`, bounded by `MAX_SUPPORTED_INTEREST = 29247120867753601621956`. The full claim including one final rounding unit is at most `MAX_SUPPORTED_CLAIM = 29247120868753601621956`, about `2.5e-56` of `2^256 - 1`. Principal paid is bounded by the original principal and paid interest by accrued interest. Vault free/reserved and total buckets use checked uint256 arithmetic and exact token receipts; no supported lifecycle value wraps. The 365-day limit is contractual term only, not the interest accrual bound.
+
+### Regression and verification results
+
+`testExtremeValidDrawCanBecomeUnpayableWhenClaimExceedsUint256` was converted into `testOriginalExtremeClaimIsRejectedBeforeDebtCreation`, which asserts `InvalidTerms`, absent agreement, zero principal/claim, unused nonces and an unbound lot. Additional tests cover the envelope constants and six-decimal asset, maximum commitment/principal with one-year payoff, one base unit above each limit, over-limit draw rejection with the pending operation preserved, maximum term and one second beyond, invalid and backwards timestamp conversions, maximum elapsed accrual with repeated checkpoints, large interest with partial and full repayment after extended default, fractional carry at maximum principal, exact payoff rounding applied once, failed-registration nonce and liquidity preservation, and unchanged normal-value behavior. Expected values are independently calculated with the rational formula rather than copied from contract outputs.
+
+Executed commands and results:
+
+- `forge fmt --check`: passed after formatting the two changed Solidity files.
+- `forge build --force`: Solc 0.8.29, 25 files, successful with warnings (classified below).
+- `forge test -vvv`: 108 tests passed, 0 failed, 0 skipped across 9 suites.
+- `forge test --fuzz-runs 1000`: 108 tests passed, 0 failed, 0 skipped; the fuzzed ledger sequence ran 1,000 cases.
+- Financial invariant campaign with `FOUNDRY_INVARIANT_RUNS=1000`, `FOUNDRY_INVARIANT_DEPTH=128`, `FOUNDRY_INVARIANT_FAIL_ON_REVERT=true`, `--fuzz-seed 0x1234`, `--match-contract CreditFinancialInvariant`: 5 tests passed, 128,000 handler invocations, zero reverts and zero discards. Per-selector counts match the earlier table; these are invocations, not successful transitions.
+- `forge coverage --report summary`: CreditManager 98.88% lines (265/268), 96.50% statements (441/457), 75.00% branches (42/56), 100% functions (29/29); CreditLiquidityVault 100/100/100/100; project total 95.42% lines, 93.31% statements, 72.27% branches, 94.38% functions. Coverage measures executed locations, not security.
+
+The two earlier scratch negative controls (one extra unit of credited lender cash; one extra unit of created principal) were detected by the independent ledger invariant and remain prior evidence; they were not re-run during this remediation. No new Critical or High local defect was reproduced after the fix.
+
+### Warning review
+
+Compiler still emits the four pre-existing `agreement` name-shadowing warnings and the test-only `selfdestruct` deprecation warning. Foundry lint still reports pre-existing external-call/reentrancy, strict-balance-equality, constructor zero-check, division-before-multiplication and test timestamp-mutation advisories; the strict comparisons are deliberate six-decimal asset compatibility constraints. The initial guarded uint64 cast introduced an `unsafe cast` lint, so `checkedTimestamp` was rewritten to assign only after an explicit bound check; no new compiler warning remains. No warning was suppressed or treated as proof of safety.
+
+### Remaining findings and gates
+
+No material local financial security defect remains known after this remediation, but this is not a security clearance. Remaining external gates are M1-B live callback authentication/delivery/re-request evidence, source-chain finality attestation, production oracle and market/adapter suitability, collateral release/liquidation design, lender recovery, and real-value authorization. Local fixtures do not establish any of those facts.

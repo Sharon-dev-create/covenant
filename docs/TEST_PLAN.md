@@ -27,4 +27,19 @@ Regression gates require successful repayment/claim and rejected premature relea
 
 ### M2-E reference-model coverage
 
-The financial invariant handler and directed lifecycle test add independent lender cash and agreement debt accounting checks. The handler records successful transitions per run and checks actual local collateral custody. Follow-up must aggregate meaningful transition counts across the invariant campaign and complete independent boundary and adversarial repayment-sequence testing. See `M2_SECURITY_VERIFICATION.md`.
+The financial invariant handler and directed lifecycle test add independent lender cash and agreement debt accounting checks. The handler records successful transitions per run and checks actual local collateral custody. The final campaign used a recorded seed, 1,000 runs and depth 128 with `fail_on_revert` enabled; see `M2_SECURITY_VERIFICATION.md` for the executed totals and the distinction between handler invocations and successful transitions.
+
+### M2-G arithmetic envelope and boundary regression gates
+
+The original extreme-value reproduction is retained as `testOriginalExtremeClaimIsRejectedBeforeDebtCreation`: the unsupported agreement reverts at registration, before debt creation, nonce consumption, lot binding or liquidity reservation. `test/CreditArithmeticBoundary.t.sol` must cover:
+
+- exact maximum commitment and principal, payoff after one year, and the six-decimal asset check;
+- one base unit above the commitment and principal limits, including an over-limit draw that leaves the pending operation intact;
+- maximum contractual term and one second beyond;
+- invalid uint64 timestamp conversions, backwards timestamps and out-of-range chain clocks;
+- maximum elapsed-time interest, repeated checkpoints, large accumulated interest and post-default partial/full payoff;
+- fractional carry at maximum principal, exact payoff rounding and prevention of duplicate rounding adjustments;
+- failed-registration preservation of both role nonces and lender liquidity;
+- unchanged normal-value behavior.
+
+Expected values are calculated independently from the rational accrual formula. Acceptance requires `forge fmt --check`, `forge build --force`, `forge test -vvv`, `forge test --fuzz-runs 1000`, the 1,000-run/128-depth invariant campaign with recorded seed and `fail_on_revert`, and coverage summary. Final executed results are recorded in `M2_SECURITY_VERIFICATION.md`. Local success is not an independent audit or a live transport attestation.

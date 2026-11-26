@@ -85,6 +85,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(total <= manager.MAX_SUPPORTED_CLAIM());
 
         uint256 payoff = total;
+        uint256 freeBefore = vault.free(lender);
         _fundPayer(borrower, payoff);
         vm.prank(borrower);
         manager.repay(loan, payoff, 1);
@@ -92,7 +93,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(state == CreditManager.State.Closed);
         assert(manager.principal(loan) == 0 && manager.accruedInterest(loan) == 0);
         assert(manager.totalPrincipalPaid(loan) == max && manager.totalInterestPaid(loan) == max / 20);
-        assert(vault.free(lender) == payoff);
+        assert(vault.free(lender) == freeBefore + payoff);
     }
 
     function testOneBaseUnitAboveEachFinancialLimitRejected() public {
@@ -110,10 +111,14 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         manager.register(overPrincipal, bs, ls);
         assert(!manager.usedBorrowerNonce(borrower, 942) && !manager.usedLenderNonce(lender, 943));
 
-        (bytes32 loan, bytes32 operation) = _fundAndDraw(max, max, 944);
+        (bytes32 loan, bytes32 operation) = _prepareLoan(max, max, 944);
         vm.prank(borrower);
         vm.expectRevert(CreditManager.InvalidExecution.selector);
         manager.executePending(loan, operation, max + 1);
+        assert(manager.principal(loan) == 0 && manager.pendingDraw(loan) == operation);
+        vm.prank(borrower);
+        manager.executePending(loan, operation, max);
+        vm.clearMockedCalls();
         assert(manager.principal(loan) == max);
     }
 
@@ -234,7 +239,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
 
     function testFractionalCarryAtMaximumPrincipal() public {
         uint256 max = manager.MAX_COMMITMENT();
-        bytes32 loan = _fundAndDraw(max, max, 960);
+        (bytes32 loan,) = _fundAndDraw(max, max, 960);
         uint256 start = uint256(manager.drawTimestamp(loan));
 
         uint256[] memory intervals = new uint256[](3);
@@ -256,7 +261,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
 
     function testExactPayoffRoundingIsAppliedOnceAtMaximumScale() public {
         uint256 max = manager.MAX_COMMITMENT();
-        bytes32 loan = _fundAndDraw(max, max, 970);
+        (bytes32 loan,) = _fundAndDraw(max, max, 970);
         uint256 start = uint256(manager.drawTimestamp(loan));
         vm.warp(start + 3);
 
@@ -266,21 +271,22 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         _fundPayer(borrower, payoff);
         vm.prank(borrower);
         manager.repay(loan, payoff - 1, 1);
-        assert(manager.principal(loan) == 0 && manager.accruedInterest(loan) == whole + 1);
+        assert(manager.principal(loan) == 0 && manager.accruedInterest(loan) == 1);
         assert(manager.interestRemainder(loan) == 0 && manager.totalInterestAccrued(loan) == whole + 1);
+        assert(manager.totalInterestPaid(loan) == whole);
 
         vm.warp(start + 365 days);
         (uint256 p, uint256 interest, uint256 total) = manager.debtPreview(loan);
-        assert(p == 0 && interest == whole + 1 && total == whole + 1);
+        assert(p == 0 && interest == 1 && total == 1);
         vm.prank(borrower);
         manager.repay(loan, 1, 2);
         (, CreditManager.State state,) = manager.agreement(loan);
         assert(state == CreditManager.State.Closed);
-        assert(manager.totalInterestAccrued(loan) == whole + 2 && manager.totalInterestPaid(loan) == whole + 2);
+        assert(manager.totalInterestAccrued(loan) == whole + 1 && manager.totalInterestPaid(loan) == whole + 1);
         vm.prank(borrower);
         vm.expectRevert(CreditManager.InvalidState.selector);
         manager.repay(loan, 1, 3);
-        assert(manager.totalInterestPaid(loan) == whole + 2);
+        assert(manager.totalInterestPaid(loan) == whole + 1);
     }
 
     function testRegistrationFailurePreservesNoncesAndLiquidity() public {
@@ -357,7 +363,20 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         lenderSignature = abi.encodePacked(r, s, v);
     }
 
-    function _fundAndDraw(uint256 cap, uint256 repayment, uint256 nonce) private returns (bytes32 loan) {
+    function _fundAndDraw(uint256 cap, uint256 repayment, uint256 nonce)
+        private
+        returns (bytes32 loan, bytes32 operation)
+    {
+        (loan, operation) = _prepareLoan(cap, repayment, nonce);
+        vm.prank(borrower);
+        manager.executePending(loan, operation, repayment);
+        vm.clearMockedCalls();
+    }
+
+    function _prepareLoan(uint256 cap, uint256 repayment, uint256 nonce)
+        private
+        returns (bytes32 loan, bytes32 operation)
+    {
         CreditManager.Terms memory t = _envelopeTerms(cap, repayment, nonce);
         (bytes memory bs, bytes memory ls) = _sign(t);
         loan = manager.register(t, bs, ls);
@@ -378,10 +397,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         market.setPosition(borrower, repayment, (repayment * 105) / 100);
         vm.mockCall(address(market), abi.encodeCall(LocalLendingMarket.isDistressed, (borrower)), abi.encode(true));
         vm.mockCall(address(market), abi.encodeCall(LocalLendingMarket.health, (borrower)), abi.encode(105e16));
-        bytes32 operation = manager.observeRisk(loan);
-        vm.prank(borrower);
-        manager.executePending(loan, operation, repayment);
-        vm.clearMockedCalls();
+        operation = manager.observeRisk(loan);
     }
 
     function _fundPayer(address payer, uint256 amount) private {
