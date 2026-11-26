@@ -16,8 +16,35 @@ interface CreditVm {
     function chainId(uint256) external;
     function getNonce(address) external view returns (uint64);
     function computeCreateAddress(address, uint256) external pure returns (address);
+    function expectCall(address, bytes calldata) external;
     function expectRevert(bytes4) external;
     function expectRevert() external;
+}
+
+// Isolated failure-injection harness. Production factory remains unchanged.
+contract RollbackHarness {
+    address public recordedManager;
+    address public recordedVault;
+    error InjectedBindingFailure();
+
+    function deploy(address asset, address verifier, address oracle, address adapter, bool inject) external {
+        uint64 next = vmNonce();
+        address managerAddress =
+            address(uint160(uint256(keccak256(abi.encodePacked(hex"d694", address(this), uint8(next))))));
+        address vaultAddress =
+            address(uint160(uint256(keccak256(abi.encodePacked(hex"d694", address(this), uint8(next + 1))))));
+        CreditManager createdManager = new CreditManager(vaultAddress, asset, verifier, oracle, adapter);
+        CreditLiquidityVault createdVault =
+            new CreditLiquidityVault(MockUSDC(asset), managerAddress, inject ? address(0xBAD) : managerAddress);
+        require(address(createdManager) == managerAddress && address(createdVault) == vaultAddress);
+        if (createdVault.consumer() != managerAddress) revert InjectedBindingFailure();
+        recordedManager = managerAddress;
+        recordedVault = vaultAddress;
+    }
+
+    function vmNonce() private view returns (uint64) {
+        return CreditVm(address(uint160(uint256(keccak256("hevm cheat code"))))).getNonce(address(this));
+    }
 }
 
 contract CreditManagerTest {
@@ -205,6 +232,27 @@ contract CreditManagerTest {
         new LocalCreditFactory(address(token), address(collateral), address(oracle), address(0x123));
     }
 
+    function testHarnessRollsBackBothCreatedContractsAfterBindingFailure() public {
+        RollbackHarness deployer = new RollbackHarness();
+        uint64 nonce = vm.getNonce(address(deployer));
+        address predictedManager = vm.computeCreateAddress(address(deployer), nonce);
+        address predictedVault = vm.computeCreateAddress(address(deployer), nonce + 1);
+        vm.expectCall(predictedVault, abi.encodeWithSignature("consumer()"));
+        (bool ok, bytes memory reason) = address(deployer)
+            .call(
+                abi.encodeCall(
+                    RollbackHarness.deploy, (address(token), address(collateral), address(oracle), address(0x123), true)
+                )
+            );
+        assert(!ok && bytes4(reason) == RollbackHarness.InjectedBindingFailure.selector);
+        assert(deployer.recordedManager() == address(0) && deployer.recordedVault() == address(0));
+        assert(vm.getNonce(address(deployer)) == nonce);
+        assert(predictedManager.code.length == 0 && predictedVault.code.length == 0);
+        deployer.deploy(address(token), address(collateral), address(oracle), address(0x123), false);
+        assert(deployer.recordedManager() == predictedManager && deployer.recordedVault() == predictedVault);
+        assert(vm.getNonce(address(deployer)) == nonce + 2);
+    }
+
     function testFuzzLtvBoundary(uint64 value) public {
         bytes32 id = _register();
         collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
@@ -218,6 +266,59 @@ contract CreditManagerTest {
             manager.activate(id);
             assert(vault.reserved(terms.lender) == terms.cap);
         }
+    }
+
+    function testSignedLotSubstitutionAndFinancialChangesAreRejected() public {
+        bytes memory borrowerSignature = _signature(BORROWER_KEY);
+        bytes memory lenderSignature = _signature(LENDER_KEY);
+        bytes32 originalId = manager.agreementId(terms);
+        terms.lotId = bytes32(uint256(999));
+        assert(manager.agreementId(terms) == originalId);
+        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        manager.register(terms, borrowerSignature, lenderSignature);
+        terms.cap += 1;
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSignature, lenderSignature);
+    }
+
+    function testSignaturesAreBoundToContractChainAndBorrowerNonce() public {
+        bytes memory borrowerSignature = _signature(BORROWER_KEY);
+        bytes memory lenderSignature = _signature(LENDER_KEY);
+        LocalCreditFactory other =
+            new LocalCreditFactory(address(token), address(collateral), address(oracle), address(0x123));
+        CreditManager otherManager = CreditManager(other.manager());
+        terms.lotId = keccak256(
+            abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, otherManager.agreementId(terms))
+        );
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        otherManager.register(terms, borrowerSignature, lenderSignature);
+        vm.chainId(31338);
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSignature, lenderSignature);
+        vm.chainId(31337);
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        manager.register(terms, borrowerSignature, lenderSignature);
+        terms.cap -= 1;
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        bytes memory freshBorrowerSignature = _signature(BORROWER_KEY);
+        bytes memory freshLenderSignature = _signature(LENDER_KEY);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, freshBorrowerSignature, freshLenderSignature);
+    }
+
+    function testExternalSigningVector() public view {
+        assert(address(manager) == 0x5B0091f49210e7B2A57B03dfE1AB9D08289d9294);
+        assert(manager.TERMS_TYPEHASH() == 0x2aa632bea9262f2564f73d4a1beafef7b9def4caabf082875275d89bac0cb273);
+        assert(manager.termsHash(terms) == 0x76446e80b51521016838a427da1025b3df01637cb3bcd591c4887656287250a2);
+        assert(manager.digest(terms) == 0x110a451a1c39a1f969f34d71e2225ce3c248866e2c05aae47ada001878afce27);
+        assert(manager.agreementId(terms) == 0xbb2503b110a84823a069969e183a935145d6e95bdc115ba0967923a54d72e0d5);
+        assert(terms.lotId == 0x02348dc25c1ab4188cfb2ab6d28bd6a5e98b60c482f11a6c87eb2613945f917c);
     }
 
     function _register() private returns (bytes32) {
