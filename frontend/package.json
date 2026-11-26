@@ -9,7 +9,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.ts",
+    "test": "node --test --test-isolation=none tests/*.test.ts",
     "generate:abis": "node scripts/generate-abis.mjs"
   },
   "dependencies": {
@@ -25,5 +25,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }

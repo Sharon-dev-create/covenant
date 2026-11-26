@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CovenantGuardian } from '../components/guardian/covenant-guardian';
 import { Brand, Network } from '../components/ui';
 import { chains, type ChainKey } from '../lib/chains';
 
@@ -12,9 +13,10 @@ export default function Home() {
         <p className="home-description">Covenant lets lenders reserve capital in advance so an eligible distressed position can receive a bounded, purpose-specific debt repayment.</p>
         <Link className="button primary" href="/dashboard">Open dashboard</Link>
       </div>
-      <section className="panel home-networks"><h2>Protocol architecture</h2>
+      <CovenantGuardian>
+        <h3>Protocol architecture</h3>
         {(Object.keys(chains) as ChainKey[]).map(key => <div key={key}><Network network={key} /><p>{chains[key].role}</p></div>)}
-      </section>
+      </CovenantGuardian>
     </main>
     <footer>Reactive Omni Buildathon · Testnet demonstration</footer>
   </div>;
