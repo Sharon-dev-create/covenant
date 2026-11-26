@@ -27,4 +27,4 @@ Regression gates require successful repayment/claim and rejected premature relea
 
 ### M2-E reference-model coverage
 
-The financial invariant handler and directed lifecycle test add independent lender cash and agreement debt accounting checks. Follow-up must measure successful state transitions separately from handler invocations, test real collateral-vault locking in the stateful model, and complete independent boundary and adversarial repayment-sequence testing. See `M2_SECURITY_VERIFICATION.md`.
+The financial invariant handler and directed lifecycle test add independent lender cash and agreement debt accounting checks. The handler records successful transitions per run and checks actual local collateral custody. Follow-up must aggregate meaningful transition counts across the invariant campaign and complete independent boundary and adversarial repayment-sequence testing. See `M2_SECURITY_VERIFICATION.md`.

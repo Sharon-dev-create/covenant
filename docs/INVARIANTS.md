@@ -28,4 +28,4 @@ For each lender, free plus reserved equals accounted cash belonging to that lend
 
 ### M2-E local reference-model scope
 
-`CreditFinancialInvariant` compares independent lender and agreement ledgers with the local vault and manager. Its collateral observations are mocks and do not prove source-chain collateral locking. Handler invocation counts include calls that return before a transition; see `M2_SECURITY_VERIFICATION.md` for the remaining verification work.
+`CreditFinancialInvariant` compares independent lender and agreement ledgers with the local vault and manager. The model checks actual local custody, while cross-chain collateral observations remain mocks. Handler invocation counts include calls that return before a transition; see `M2_SECURITY_VERIFICATION.md` for the remaining verification work.

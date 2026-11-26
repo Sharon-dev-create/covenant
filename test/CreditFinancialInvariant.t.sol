@@ -4,7 +4,8 @@ pragma solidity 0.8.29;
 import {CreditManager} from "../src/CreditManager.sol";
 import {CreditLiquidityVault} from "../src/CreditLiquidityVault.sol";
 import {LocalCreditFactory} from "../src/LocalCreditFactory.sol";
-import {ReservationState} from "../src/ProtocolTypes.sol";
+import {CollateralVault} from "../src/CollateralVault.sol";
+import {CollateralState, ReservationState} from "../src/ProtocolTypes.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {
     LocalCollateralFixture,
@@ -18,6 +19,7 @@ interface FinancialVm {
     function sign(uint256, bytes32) external returns (uint8, bytes32, bytes32);
     function prank(address) external;
     function warp(uint256) external;
+    function deal(address, uint256) external;
 }
 
 contract FinancialHandler {
@@ -32,6 +34,52 @@ contract FinancialHandler {
     LocalRepaymentAdapter public immutable adapter;
     CreditManager public immutable manager;
     CreditLiquidityVault public immutable vault;
+    CollateralVault public immutable custody;
+
+    struct Metrics {
+        uint256 calls;
+        uint256 ineligible;
+        uint256 transitions;
+        uint256 financial;
+        uint256 amount;
+    }
+    mapping(bytes4 => Metrics) public metrics;
+    mapping(bytes32 => uint256) public transitionCounts;
+    bool private acted;
+    modifier measured() {
+        metrics[msg.sig].calls++;
+        acted = false;
+        _;
+        if (!acted) metrics[msg.sig].ineligible++;
+    }
+
+    function _success(uint256 amount, bool financial) private {
+        Metrics storage m = metrics[msg.sig];
+        m.transitions++;
+        if (financial) m.financial++;
+        m.amount += amount;
+        acted = true;
+    }
+
+    function _select(uint256 seed, uint8 kind) private view returns (uint256) {
+        uint256 n = loans.length;
+        if (n == 0) return type(uint256).max;
+        for (uint256 i; i < n; i++) {
+            uint256 index = (seed % n + i) % n;
+            Ghost storage g = loans[index];
+            bool eligible;
+            if (kind == 1) eligible = g.state == 1 && block.timestamp < g.deadline;
+            if (kind == 2) eligible = g.state == 1 || g.state == 2;
+            if (kind == 3) eligible = g.state == 2 && g.op == bytes32(0) && block.timestamp < g.deadline;
+            if (kind == 4) eligible = g.state == 2 && g.op != bytes32(0) && block.timestamp < g.deadline;
+            if (kind == 5) eligible = (g.state == 1 || g.state == 2) && block.timestamp >= g.deadline;
+            if (kind == 6) eligible = g.state == 2 && g.op != bytes32(0);
+            if (kind == 7) eligible = g.state == 3 || g.state == 5;
+            if (kind == 8) eligible = g.state == 3 && block.timestamp >= g.maturity;
+            if (eligible) return index;
+        }
+        return type(uint256).max;
+    }
 
     struct Ghost {
         bytes32 id;
@@ -61,6 +109,7 @@ contract FinancialHandler {
     uint256 public paymentNonce;
 
     constructor() {
+        custody = new CollateralVault(address(this));
         token = new MockUSDC();
         collateral = new LocalCollateralFixture();
         oracle = new LocalOracleFixture();
@@ -89,8 +138,10 @@ contract FinancialHandler {
         return vm.addr(0xB110 + i % 3);
     }
 
-    function deposit(uint8 who, uint32 seed) external {
+    function deposit(uint8 who, uint32 seed) external measured {
         _deposit(lender(who), uint256(seed) % 100e6 + 1);
+        assert(vault.free(lender(who)) == free[lender(who)]);
+        _success(uint256(seed) % 100e6 + 1, true);
     }
 
     function _deposit(address who, uint256 amount) private {
@@ -103,7 +154,7 @@ contract FinancialHandler {
         deposits += amount;
     }
 
-    function register(uint8 who) external {
+    function register(uint8 who) external measured {
         uint256 index = who % 3;
         uint256 n = ++nonce;
         address b = vm.addr(0xA110 + n);
@@ -111,8 +162,8 @@ contract FinancialHandler {
         CreditManager.Terms memory t = CreditManager.Terms(
             b,
             l,
-            address(0x55),
-            1301,
+            address(custody),
+            block.chainid,
             bytes32(0),
             1 ether,
             address(market),
@@ -135,12 +186,19 @@ contract FinancialHandler {
         bytes memory bs = abi.encodePacked(r, s, v);
         (v, r, s) = vm.sign(0xB110 + index, digest);
         bytes32 id = manager.register(t, bs, abi.encodePacked(r, s, v));
+        custody.bind(id, b, 1 ether);
+        vm.deal(b, 1 ether);
+        vm.prank(b);
+        assert(custody.lock{value: 1 ether}(id) == t.lotId);
         loans.push(Ghost(id, bytes32(0), b, l, 0, 0, 0, 0, 0, 0, 0, t.maturity + t.grace, t.drawDeadline, 1));
+        assert(custody.borrowers(id) == b && custody.totalLocked() == loans.length * 1 ether);
+        _success(1 ether, false);
     }
 
-    function activate(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function activate(uint256 seed) external measured {
+        uint256 selected = _select(seed, 1);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 1 || block.timestamp >= g.deadline) return;
         if (free[g.lender] < CAP) _deposit(g.lender, CAP - free[g.lender]);
         (CreditManager.Terms memory t,,) = manager.agreement(g.id);
@@ -152,11 +210,15 @@ contract FinancialHandler {
         free[g.lender] -= CAP;
         reserved[g.lender] += CAP;
         g.state = 2;
+        assert(vault.reserved(g.lender) == reserved[g.lender]);
+        transitionCounts["reservation"]++;
+        _success(CAP, true);
     }
 
-    function cancel(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function cancel(uint256 seed) external measured {
+        uint256 selected = _select(seed, 2);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 1 && g.state != 2) return;
         vm.prank(g.borrower);
         manager.cancelUnused(g.id);
@@ -165,19 +227,25 @@ contract FinancialHandler {
             free[g.lender] += CAP;
         }
         g.state = 4;
+        assert(vault.free(g.lender) == free[g.lender]);
+        _success(0, false);
     }
 
-    function observe(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function observe(uint256 seed) external measured {
+        uint256 selected = _select(seed, 3);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 2 || g.op != bytes32(0) || block.timestamp >= g.deadline) return;
         market.setPosition(g.borrower, 800e6, 840e6);
         g.op = manager.observeRisk(g.id);
+        assert(g.op != bytes32(0));
+        _success(0, false);
     }
 
-    function execute(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function execute(uint256 seed) external measured {
+        uint256 selected = _select(seed, 4);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 2 || g.op == bytes32(0) || block.timestamp >= g.deadline) return;
         market.setPosition(g.borrower, 800e6, 840e6);
         oracle.set(2000e6, block.timestamp);
@@ -188,15 +256,19 @@ contract FinancialHandler {
         g.principal = DRAW;
         g.last = block.timestamp;
         g.state = 3;
+        assert(manager.principal(g.id) == DRAW && market.debt(g.borrower) == 600e6);
+        _success(DRAW, true);
     }
 
-    function advance(uint32 secondsSeed) external {
+    function advance(uint32 secondsSeed) external measured {
         vm.warp(block.timestamp + uint256(secondsSeed % 30 days) + 1);
+        _success(0, false);
     }
 
-    function expire(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function expire(uint256 seed) external measured {
+        uint256 selected = _select(seed, 5);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if ((g.state != 1 && g.state != 2) || block.timestamp < g.deadline) return;
         manager.expireUnused(g.id);
         if (g.state == 2) {
@@ -204,9 +276,11 @@ contract FinancialHandler {
             free[g.lender] += CAP;
         }
         g.state = 4;
+        assert(vault.free(g.lender) == free[g.lender]);
+        _success(0, false);
     }
 
-    function revoke(uint8 seed) external {
+    function revoke(uint8 seed) external measured {
         address b = actor(seed);
         address l = lender(seed);
         uint256 n = ++nonce;
@@ -215,29 +289,37 @@ contract FinancialHandler {
         vm.prank(l);
         manager.invalidateLenderNonce(n);
         assert(manager.usedBorrowerNonce(b, n) && manager.usedLenderNonce(l, n));
+        _success(0, false);
     }
 
-    function clearRecovered(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function clearRecovered(uint256 seed) external measured {
+        uint256 selected = _select(seed, 6);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 2 || g.op == bytes32(0)) return;
         market.setPosition(g.borrower, 800e6, 1000e6);
         manager.clearRecoveredRisk(g.id);
         g.op = bytes32(0);
+        _success(0, false);
     }
 
-    function checkpoint(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function checkpoint(uint256 seed) external measured {
+        uint256 selected = _select(seed, 7);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 3 && g.state != 5) return;
         _accrue(g);
         manager.accrueInterest(g.id);
+        assert(manager.accruedInterest(g.id) == g.interest);
+        _success(0, false);
     }
 
-    function repay(uint256 seed, uint64 amountSeed, bool full) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function repay(uint256 seed, uint64 amountSeed, bool full) external measured {
+        uint256 selected = _select(seed, 7);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 3 && g.state != 5) return;
+        bool wasDefault = g.state == 5;
         _accrue(g);
         uint256 total = g.principal + g.interest + (g.remainder == 0 ? 0 : 1);
         uint256 amount = full ? total : uint256(amountSeed) % total + 1;
@@ -265,18 +347,26 @@ contract FinancialHandler {
         manager.repay(g.id, amount, ++paymentNonce);
         free[g.lender] += amount;
         repayments += amount;
+        assert(manager.principal(g.id) == g.principal && vault.free(g.lender) == free[g.lender]);
+        if (g.state == 4) transitionCounts["fullRepay"]++;
+        else transitionCounts["partialRepay"]++;
+        if (wasDefault) transitionCounts["afterDefault"]++;
+        _success(amount, true);
     }
 
-    function markDefault(uint256 seed) external {
-        if (loans.length == 0) return;
-        Ghost storage g = loans[seed % loans.length];
+    function markDefault(uint256 seed) external measured {
+        uint256 selected = _select(seed, 8);
+        if (selected == type(uint256).max) return;
+        Ghost storage g = loans[selected];
         if (g.state != 3 || block.timestamp < g.maturity) return;
         _accrue(g);
         manager.markDefault(g.id);
         g.state = 5;
+        assert(manager.principal(g.id) == g.principal);
+        _success(0, false);
     }
 
-    function withdraw(uint8 who, uint32 seed) external {
+    function withdraw(uint8 who, uint32 seed) external measured {
         address l = lender(who);
         if (free[l] == 0) _deposit(l, uint256(seed) % 10e6 + 1);
         uint256 amount = uint256(seed) % free[l] + 1;
@@ -284,12 +374,16 @@ contract FinancialHandler {
         vault.withdraw(amount);
         free[l] -= amount;
         withdrawals += amount;
+        assert(vault.free(l) == free[l]);
+        _success(amount, true);
     }
 
-    function donate(uint32 seed) external {
+    function donate(uint32 seed) external measured {
         uint256 amount = uint256(seed) + 1;
         token.mint(address(vault), amount);
         donations += amount;
+        assert(vault.surplus() == donations);
+        _success(amount, true);
     }
 
     function _accrue(Ghost storage g) private {
@@ -304,7 +398,26 @@ contract FinancialHandler {
     }
 }
 
+contract ForceCollateralEther {
+    constructor() payable {}
+
+    function force(address payable target) external {
+        selfdestruct(target);
+    }
+}
+
 contract CreditFinancialInvariant {
+    FinancialVm private constant vm = FinancialVm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    event Counts(
+        bytes4 selector, uint256 calls, uint256 ineligible, uint256 transitions, uint256 financial, uint256 amount
+    );
+
+    function _report(bytes4 selector) private {
+        (uint256 calls, uint256 ineligible, uint256 transitions, uint256 financial, uint256 amount) =
+            handler.metrics(selector);
+        emit Counts(selector, calls, ineligible, transitions, financial, amount);
+    }
+
     FinancialHandler handler;
 
     function setUp() public {
@@ -332,6 +445,83 @@ contract CreditFinancialInvariant {
         handler.advance(29 days);
         handler.advance(29 days);
         handler.markDefault(0);
+        handler.repay(0, 0, true);
+        invariant_CashAndDebtMatchIndependentLedger();
+    }
+
+    function testMeasuredRareTransitionsAndActualCustody() public {
+        handler.register(0);
+        handler.register(1);
+        handler.register(2);
+        handler.activate(0);
+        handler.activate(1);
+        handler.activate(2);
+        handler.observe(0);
+        handler.clearRecovered(0);
+        handler.observe(0);
+        handler.execute(0);
+        handler.cancel(1);
+        handler.deposit(1, 3);
+        handler.donate(8);
+        handler.withdraw(1, 1);
+        handler.revoke(1);
+        handler.advance(29 days);
+        handler.advance(2 days);
+        handler.advance(29 days);
+        handler.expire(2);
+        (,, uint256 expired,,) = handler.metrics(handler.expire.selector);
+        assert(expired == 1);
+        handler.checkpoint(0);
+        handler.repay(0, 100, false);
+        handler.advance(29 days);
+        handler.advance(29 days);
+        handler.advance(29 days);
+        handler.markDefault(0);
+        handler.repay(0, 0, true);
+        invariant_CashAndDebtMatchIndependentLedger();
+        assert(handler.transitionCounts("reservation") == 3);
+        assert(handler.transitionCounts("partialRepay") == 1);
+        assert(handler.transitionCounts("fullRepay") == 1);
+        assert(handler.transitionCounts("afterDefault") == 1);
+        FinancialHandler.Ghost memory g = handler.loan(0);
+        CollateralVault custody = handler.custody();
+        vm.prank(address(handler));
+        (bool rebound,) = address(custody).call(abi.encodeCall(custody.bind, (g.id, address(0x1234), 1 ether)));
+        assert(!rebound);
+        vm.deal(address(this), 1 ether);
+        ForceCollateralEther force = new ForceCollateralEther{value: 1 ether}();
+        force.force(payable(address(custody)));
+        assert(custody.surplus() == 1 ether && custody.totalLocked() == 3 ether);
+        invariant_CashAndDebtMatchIndependentLedger();
+        _report(handler.register.selector);
+        _report(handler.activate.selector);
+        _report(handler.cancel.selector);
+        _report(handler.expire.selector);
+        _report(handler.observe.selector);
+        _report(handler.clearRecovered.selector);
+        _report(handler.execute.selector);
+        _report(handler.checkpoint.selector);
+        _report(handler.repay.selector);
+        _report(handler.markDefault.selector);
+        _report(handler.withdraw.selector);
+        _report(handler.donate.selector);
+    }
+
+    function testFuzzRepaymentLedgerSequence(uint32 first, uint32 second, uint64 payment, uint32 donation) public {
+        handler.register(0);
+        handler.activate(0);
+        handler.observe(0);
+        handler.execute(0);
+        handler.advance(first % 10 days);
+        handler.checkpoint(0);
+        invariant_CashAndDebtMatchIndependentLedger();
+        handler.repay(0, payment % 100e6, false);
+        invariant_CashAndDebtMatchIndependentLedger();
+        handler.donate(donation);
+        handler.withdraw(0, donation);
+        handler.advance(second % 10 days);
+        handler.checkpoint(0);
+        invariant_CashAndDebtMatchIndependentLedger();
         handler.repay(0, 0, true);
         invariant_CashAndDebtMatchIndependentLedger();
     }
@@ -388,9 +578,18 @@ contract CreditFinancialInvariant {
             reservedLoans += _checkLoan(handler.loan(j));
         }
         assert(reservedLoans == reservedSum);
+        assert(handler.custody().totalLocked() == handler.loanCount() * 1 ether);
+        assert(address(handler.custody()).balance == handler.custody().totalLocked() + handler.custody().surplus());
+    }
+
+    function _checkCustody(FinancialHandler.Ghost memory g) private view {
+        (address owner, bytes32 linked, uint256 locked, CollateralState collateralState) =
+            handler.custody().positions(handler.custody().positionId(g.id));
+        assert(owner == g.borrower && linked == g.id && locked == 1 ether && collateralState == CollateralState.Locked);
     }
 
     function _checkLoan(FinancialHandler.Ghost memory g) private view returns (uint256 reservedLoan) {
+        _checkCustody(g);
         CreditManager manager = handler.manager();
         (, CreditManager.State state, bytes32 reservation) = manager.agreement(g.id);
         assert(uint8(state) == (g.state == 3 ? 4 : g.state == 4 ? 3 : g.state));
