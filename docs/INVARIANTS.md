@@ -39,3 +39,7 @@ For each lender, free plus reserved equals accounted cash belonging to that lend
 - `totalInterestAccrued <= MAX_SUPPORTED_INTEREST`, `principal + accruedInterest + (remainder == 0 ? 0 : 1) <= MAX_SUPPORTED_CLAIM`, and no uint256 intermediate in the decomposed interest expression can overflow. Interest continues after default and maturity; there is no accrual cutoff or saturation.
 - Final payoff crystallizes at most one carry unit, once. A closed agreement has zero principal, zero accrued interest and zero remainder; a repeated payoff reverts.
 - Repayment after default, interest-first allocation, exact measured lender credit, single-use payment IDs, replay protection, collateral isolation and transaction rollback are unchanged by the envelope.
+
+## M3-B testnet policy invariants
+
+For one testnet manager, `0 <= lifetimePrincipalCreated <= 300e6`; it equals the sum of successful draw principal for that deployment and never decreases. The signed cap and exact draw cannot exceed 300e6. Reverted execution leaves the counter, pending operation, vault cash and external-market debt unchanged. Independently deployed managers have independent counters; this is not a global asset-supply limit. Local manager policy remains the M2 envelope.

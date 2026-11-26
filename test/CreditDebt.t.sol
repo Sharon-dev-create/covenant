@@ -3,6 +3,7 @@ pragma solidity 0.8.29;
 
 import {CreditExecutionTest} from "./CreditExecution.t.sol";
 import {CreditManager} from "../src/CreditManager.sol";
+import {CreditManagerCore} from "../src/CreditManagerCore.sol";
 import {TransferFailed, InexactTransfer, ReentrantCall} from "../src/ProtocolTypes.sol";
 
 contract CreditDebtTest is CreditExecutionTest {
@@ -60,8 +61,8 @@ contract CreditDebtTest is CreditExecutionTest {
         assert(p == 0 && i == 1 && total == 1);
         vm.prank(borrower);
         manager.repay(id, 1, 2);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Closed && manager.totalInterestPaid(id) == 1);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Closed && manager.totalInterestPaid(id) == 1);
     }
 
     function testSplitAccrualMatchesContinuous() public {
@@ -97,15 +98,15 @@ contract CreditDebtTest is CreditExecutionTest {
     function testDefaultCureAndCancellationGuards() public {
         _draw();
         _fund(borrower, 250e6);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.markDefault(id);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.cancelUnused(id);
         vm.warp(uint256(terms.maturity) + uint256(terms.grace));
         manager.markDefault(id);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Defaulted);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Defaulted);
         vm.prank(borrower);
         manager.repay(id, 10e6, 1);
         assert(manager.principal(id) > 0);
@@ -113,9 +114,9 @@ contract CreditDebtTest is CreditExecutionTest {
         vm.prank(borrower);
         manager.repay(id, total, 2);
         (, state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Closed);
+        assert(state == CreditManagerCore.State.Closed);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.repay(id, 1, 3);
     }
 
@@ -123,10 +124,10 @@ contract CreditDebtTest is CreditExecutionTest {
         _draw();
         _fund(borrower, 200e6);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidRepayment.selector);
+        vm.expectRevert(CreditManagerCore.InvalidRepayment.selector);
         manager.repay(id, 0, 1);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidRepayment.selector);
+        vm.expectRevert(CreditManagerCore.InvalidRepayment.selector);
         manager.repay(id, 200e6 + 1, 1);
         vm.prank(address(0xBEEF));
         vm.expectRevert(TransferFailed.selector);
@@ -141,7 +142,7 @@ contract CreditDebtTest is CreditExecutionTest {
         vm.prank(borrower);
         manager.repay(id, 10e6, 1);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidRepayment.selector);
+        vm.expectRevert(CreditManagerCore.InvalidRepayment.selector);
         manager.repay(id, 10e6, 1);
         assert(manager.principal(id) == 190e6 && vault.free(lender) == 410e6);
     }
@@ -167,7 +168,7 @@ contract CreditDebtTest is CreditExecutionTest {
         _draw();
         address secondBorrower = vm.addr(0xCAFE);
         address secondLender = vm.addr(0xD00D);
-        CreditManager.Terms memory second = terms;
+        CreditManagerCore.Terms memory second = terms;
         second.borrower = secondBorrower;
         second.debtor = secondBorrower;
         second.lender = secondLender;

@@ -43,3 +43,7 @@ The original extreme-value reproduction is retained as `testOriginalExtremeClaim
 - unchanged normal-value behavior.
 
 Expected values are calculated independently from the rational accrual formula. Acceptance requires `forge fmt --check`, `forge build --force`, `forge test -vvv`, `forge test --fuzz-runs 1000`, the 1,000-run/128-depth invariant campaign with recorded seed and `fail_on_revert`, and coverage summary. Final executed results are recorded in `M2_SECURITY_VERIFICATION.md`. Local success is not an independent audit or a live transport attestation.
+
+## M3-B verification scope
+
+Retain all M2 regression and invariant tests and run the same core scenario on simulated 31337 and 84532 deployments. Test chain guards, asset decimals and immutable bindings, exact and above-limit agreements, successful/failed draw accounting, non-replenishment on repayment/default/cancellation, cross-chain and cross-manager signatures, and the factory creation rollback pattern. The injection harness tests the creation pattern, not a failure switch in the production factory. These tests do not verify live Base Sepolia or Reactive transport.

@@ -29,3 +29,7 @@ M1-B live callback authentication, delivery and finality, production oracle and 
 ## M3 shortest implementation sequence
 
 Reuse, rather than duplicate, the local `CreditManager` registration/activation/risk/draw/repay interfaces, the exact-repayment adapter and market boundary, and the existing transport emitter/receiver probes. The shortest path to an end-to-end Reactive financial demonstration is: capture outstanding M1-B live transport and finality evidence; bind and authenticate the exact Omni proxy, originating Reactive contract, source log domain and operation/payload hash to the existing manager callback boundary; verify callback funding/retry/idempotency against replay-protected operation IDs; run the local activation, exact draw and repayment sequence through that callback path with testnet-only value; then add production oracle/market adaptors and collateral recovery only as separately authorized gates. No M3 implementation was performed during this M2 closure.
+
+## M3-B shared engine
+
+The local shared-core and restricted Base Sepolia wrappers and factory are implemented for local testing. No testnet transaction has been broadcast. M3-C finality/attestation and M3-D financial Reactive callbacks remain future work; signer governance, live M1-B route verification, mock dependencies, funding and separate deployment authorization remain open.

@@ -2,6 +2,7 @@
 pragma solidity 0.8.29;
 
 import {CreditManager} from "../src/CreditManager.sol";
+import {CreditManagerCore} from "../src/CreditManagerCore.sol";
 import {LocalCreditFactory} from "../src/LocalCreditFactory.sol";
 import {CreditLiquidityVault} from "../src/CreditLiquidityVault.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
@@ -57,7 +58,7 @@ contract CreditManagerTest {
     CreditManager private manager;
     CreditLiquidityVault private vault;
     LocalCreditFactory private factory;
-    CreditManager.Terms private terms;
+    CreditManagerCore.Terms private terms;
 
     function setUp() public {
         vm.warp(10000);
@@ -67,7 +68,7 @@ contract CreditManagerTest {
         factory = new LocalCreditFactory(address(token), address(collateral), address(oracle), address(0x123));
         manager = CreditManager(factory.manager());
         vault = CreditLiquidityVault(factory.vault());
-        terms = CreditManager.Terms(
+        terms = CreditManagerCore.Terms(
             vm.addr(BORROWER_KEY),
             vm.addr(LENDER_KEY),
             address(0x55),
@@ -111,9 +112,9 @@ contract CreditManagerTest {
         vm.prank(terms.lender);
         vault.setCommitment(id, terms.cap);
         manager.activate(id);
-        (, CreditManager.State state, bytes32 reservation) = manager.agreement(id);
-        assert(state == CreditManager.State.Active && vault.reserved(terms.lender) == terms.cap);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        (, CreditManagerCore.State state, bytes32 reservation) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Active && vault.reserved(terms.lender) == terms.cap);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.activate(id);
         vm.prank(terms.borrower);
         manager.cancelUnused(id);
@@ -121,41 +122,41 @@ contract CreditManagerTest {
         (,, uint256 amount,) = vault.reservations(reservation);
         assert(amount == 0);
         vm.prank(terms.borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.cancelUnused(id);
         bytes memory borrowerSignature = _signature(BORROWER_KEY);
         bytes memory lenderSignature = _signature(LENDER_KEY);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, borrowerSignature, lenderSignature);
     }
 
     function testWrongSignaturesAndTerms() public {
         bytes memory wrongSignature = _signature(LENDER_KEY);
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, wrongSignature, wrongSignature);
         assert(!manager.usedBorrowerNonce(terms.borrower, terms.borrowerNonce));
         assert(!manager.usedLenderNonce(terms.lender, terms.lenderNonce));
         terms.ltvBps = 5001;
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(terms, "", "");
     }
 
     function testCollateralOracleCommitmentAndCashGuards() public {
         bytes32 id = _register();
-        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        vm.expectRevert(CreditManagerCore.InvalidCollateral.selector);
         manager.activate(id);
         collateral.set(id, terms.lotId, address(0x99), terms.collateralAmount);
-        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        vm.expectRevert(CreditManagerCore.InvalidCollateral.selector);
         manager.activate(id);
         collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount - 1);
-        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        vm.expectRevert(CreditManagerCore.InvalidCollateral.selector);
         manager.activate(id);
         collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
         oracle.set(2000e6, block.timestamp - 3601);
-        vm.expectRevert(CreditManager.InvalidPrice.selector);
+        vm.expectRevert(CreditManagerCore.InvalidPrice.selector);
         manager.activate(id);
         oracle.set(999e6, block.timestamp);
-        vm.expectRevert(CreditManager.InvalidPrice.selector);
+        vm.expectRevert(CreditManagerCore.InvalidPrice.selector);
         manager.activate(id);
         oracle.set(2000e6, block.timestamp);
         vm.expectRevert();
@@ -166,22 +167,22 @@ contract CreditManagerTest {
         vault.withdraw(1000e6);
         vm.expectRevert(InsufficientLiquidity.selector);
         manager.activate(id);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Draft);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Draft);
     }
 
     function testCancelAndExpiryAuthorization() public {
         bytes32 id = _register();
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.cancelUnused(id);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.expireUnused(id);
         vm.warp(terms.drawDeadline);
         manager.expireUnused(id);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Closed);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Closed);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.expireUnused(id);
     }
 
@@ -194,7 +195,7 @@ contract CreditManagerTest {
         vm.warp(terms.drawDeadline);
         manager.expireUnused(id);
         assert(vault.free(terms.lender) == 1000e6 && vault.reserved(terms.lender) == 0);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.activate(id);
     }
 
@@ -204,13 +205,13 @@ contract CreditManagerTest {
         terms.borrowerNonce = 2;
         terms.lenderNonce = 11;
         terms.lotId = firstLot;
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(terms, "", "");
         terms.lotId =
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
         bytes32 second = _register();
         collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
-        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        vm.expectRevert(CreditManagerCore.InvalidCollateral.selector);
         manager.activate(id);
         assert(second != id);
     }
@@ -219,7 +220,7 @@ contract CreditManagerTest {
         address failedFactory = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
         address failedManager = factory.predict(failedFactory, 1);
         address failedVault = factory.predict(failedFactory, 2);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         new LocalCreditFactory(address(0), address(collateral), address(oracle), address(0x123));
         assert(failedFactory.code.length == 0 && failedManager.code.length == 0 && failedVault.code.length == 0);
         (bool ok,) = address(factory)
@@ -266,7 +267,7 @@ contract CreditManagerTest {
         vault.setCommitment(id, terms.cap);
         oracle.set(uint256(value), block.timestamp);
         if (uint256(value) / 2 < terms.cap) {
-            vm.expectRevert(CreditManager.InvalidPrice.selector);
+            vm.expectRevert(CreditManagerCore.InvalidPrice.selector);
             manager.activate(id);
         } else {
             manager.activate(id);
@@ -280,12 +281,12 @@ contract CreditManagerTest {
         bytes32 originalId = manager.agreementId(terms);
         terms.lotId = bytes32(uint256(999));
         assert(manager.agreementId(terms) == originalId);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(terms, borrowerSignature, lenderSignature);
         terms.cap += 1;
         terms.lotId =
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSignature, lenderSignature);
     }
 
@@ -298,12 +299,12 @@ contract CreditManagerTest {
         terms.lotId = keccak256(
             abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, otherManager.agreementId(terms))
         );
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         otherManager.register(terms, borrowerSignature, lenderSignature);
         vm.chainId(31338);
         terms.lotId =
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSignature, lenderSignature);
         vm.chainId(31337);
         terms.lotId =
@@ -314,7 +315,7 @@ contract CreditManagerTest {
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
         bytes memory freshBorrowerSignature = _signature(BORROWER_KEY);
         bytes memory freshLenderSignature = _signature(LENDER_KEY);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, freshBorrowerSignature, freshLenderSignature);
     }
 
@@ -332,12 +333,12 @@ contract CreditManagerTest {
         bytes memory lenderSig = _signature(LENDER_KEY);
         terms.autonomousRepayment += 1;
         _updateLot();
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSig, lenderSig);
         terms.autonomousRepayment -= 1;
         terms.maxHealth -= 1;
         _updateLot();
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedBorrowerNonce(terms.borrower, terms.borrowerNonce));
         assert(!manager.usedLenderNonce(terms.lender, terms.lenderNonce));
@@ -350,7 +351,7 @@ contract CreditManagerTest {
         _updateLot();
         bytes memory borrowerSig = _signature(BORROWER_KEY);
         bytes memory lenderSig = _signature(LENDER_KEY);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedLenderNonce(terms.lender, 11));
         terms.borrowerNonce = 2;
@@ -358,7 +359,7 @@ contract CreditManagerTest {
         _updateLot();
         borrowerSig = _signature(BORROWER_KEY);
         lenderSig = _signature(LENDER_KEY);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedBorrowerNonce(terms.borrower, 2));
     }
@@ -374,7 +375,7 @@ contract CreditManagerTest {
         assert(!manager.usedLenderNonce(terms.lender, 10));
         vm.prank(terms.borrower);
         manager.invalidateBorrowerNonce(1);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedLenderNonce(terms.lender, 10));
         terms.borrowerNonce = 2;
@@ -383,18 +384,18 @@ contract CreditManagerTest {
         lenderSig = _signature(LENDER_KEY);
         vm.prank(terms.lender);
         manager.invalidateLenderNonce(10);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedBorrowerNonce(terms.borrower, 2));
         vm.prank(terms.lender);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.invalidateLenderNonce(10);
     }
 
     function testOutOfOrderAuthorizationsAndExistingReservation() public {
         bytes memory firstBorrower = _signature(BORROWER_KEY);
         bytes memory firstLender = _signature(LENDER_KEY);
-        CreditManager.Terms memory first = terms;
+        CreditManagerCore.Terms memory first = terms;
         terms.borrowerNonce = 100;
         terms.lenderNonce = 200;
         _updateLot();
@@ -410,8 +411,8 @@ contract CreditManagerTest {
         manager.invalidateBorrowerNonce(500);
         vm.prank(terms.lender);
         manager.invalidateLenderNonce(500);
-        (, CreditManager.State state,) = manager.agreement(second);
-        assert(state == CreditManager.State.Active && vault.reserved(terms.lender) == terms.cap);
+        (, CreditManagerCore.State state,) = manager.agreement(second);
+        assert(state == CreditManagerCore.State.Active && vault.reserved(terms.lender) == terms.cap);
         assert(vault.commitments(terms.lender, otherCommitment) == 25e6);
         manager.register(first, firstBorrower, firstLender);
         assert(manager.usedBorrowerNonce(terms.borrower, 1) && manager.usedLenderNonce(terms.lender, 10));
@@ -422,13 +423,13 @@ contract CreditManagerTest {
         bytes memory lenderSig = _signature(LENDER_KEY);
         terms.borrowerNonce = 2;
         _updateLot();
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedBorrowerNonce(terms.borrower, 2) && !manager.usedLenderNonce(terms.lender, 10));
         terms.borrowerNonce = 1;
         terms.lenderNonce = 11;
         _updateLot();
-        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        vm.expectRevert(CreditManagerCore.InvalidAuthorization.selector);
         manager.register(terms, borrowerSig, lenderSig);
         assert(!manager.usedBorrowerNonce(terms.borrower, 1) && !manager.usedLenderNonce(terms.lender, 11));
     }

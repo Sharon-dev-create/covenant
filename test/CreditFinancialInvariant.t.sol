@@ -2,6 +2,7 @@
 pragma solidity 0.8.29;
 
 import {CreditManager} from "../src/CreditManager.sol";
+import {CreditManagerCore} from "../src/CreditManagerCore.sol";
 import {CreditLiquidityVault} from "../src/CreditLiquidityVault.sol";
 import {LocalCreditFactory} from "../src/LocalCreditFactory.sol";
 import {CollateralVault} from "../src/CollateralVault.sol";
@@ -159,7 +160,7 @@ contract FinancialHandler {
         uint256 n = ++nonce;
         address b = vm.addr(0xA110 + n);
         address l = lender(index);
-        CreditManager.Terms memory t = CreditManager.Terms(
+        CreditManagerCore.Terms memory t = CreditManagerCore.Terms(
             b,
             l,
             address(custody),
@@ -201,7 +202,7 @@ contract FinancialHandler {
         Ghost storage g = loans[selected];
         if (g.state != 1 || block.timestamp >= g.deadline) return;
         if (free[g.lender] < CAP) _deposit(g.lender, CAP - free[g.lender]);
-        (CreditManager.Terms memory t,,) = manager.agreement(g.id);
+        (CreditManagerCore.Terms memory t,,) = manager.agreement(g.id);
         collateral.set(g.id, t.lotId, g.borrower, 1 ether);
         oracle.set(2000e6, block.timestamp);
         vm.prank(g.lender);
@@ -573,7 +574,7 @@ contract CreditFinancialInvariant {
 
     function _repaymentSnapshot(FinancialHandler.Ghost memory g, bytes32 paymentId) private view returns (bytes32) {
         CreditManager manager = handler.manager();
-        (, CreditManager.State state,) = manager.agreement(g.id);
+        (, CreditManagerCore.State state,) = manager.agreement(g.id);
         return keccak256(
             abi.encode(
                 manager.principal(g.id),
@@ -685,7 +686,7 @@ contract CreditFinancialInvariant {
     function _checkLoan(FinancialHandler.Ghost memory g) private view returns (uint256 reservedLoan) {
         _checkCustody(g);
         CreditManager manager = handler.manager();
-        (, CreditManager.State state, bytes32 reservation) = manager.agreement(g.id);
+        (, CreditManagerCore.State state, bytes32 reservation) = manager.agreement(g.id);
         assert(uint8(state) == (g.state == 3 ? 4 : g.state == 4 ? 3 : g.state));
         assert(manager.principal(g.id) == g.principal);
         assert(manager.accruedInterest(g.id) == g.interest && manager.interestRemainder(g.id) == g.remainder);

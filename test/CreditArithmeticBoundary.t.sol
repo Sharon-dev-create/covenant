@@ -3,6 +3,7 @@ pragma solidity 0.8.29;
 
 import {CreditExecutionTest} from "./CreditExecution.t.sol";
 import {CreditManager} from "../src/CreditManager.sol";
+import {CreditManagerCore} from "../src/CreditManagerCore.sol";
 import {LocalOracleFixture, LocalLendingMarket} from "./mocks/LocalCreditFixtures.sol";
 
 /// @dev Extreme local dependencies are deliberately mocked; not a claim about a live USDC supply.
@@ -45,14 +46,14 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
     /// It is now rejected at registration, before any nonce, reservation or principal exists.
     function testOriginalExtremeClaimIsRejectedBeforeDebtCreation() public {
         uint256 extreme = type(uint256).max / 2;
-        CreditManager.Terms memory t = _envelopeTerms(extreme, extreme, 900);
+        CreditManagerCore.Terms memory t = _envelopeTerms(extreme, extreme, 900);
         (bytes memory bs, bytes memory ls) = _sign(t);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(t, bs, ls);
 
         bytes32 rejected = manager.agreementId(t);
-        (, CreditManager.State state,) = manager.agreement(rejected);
-        assert(state == CreditManager.State.Absent);
+        (, CreditManagerCore.State state,) = manager.agreement(rejected);
+        assert(state == CreditManagerCore.State.Absent);
         (uint256 rp, uint256 ri, uint256 rt) = manager.debtPreview(rejected);
         assert(manager.principal(rejected) == 0 && rp == 0 && ri == 0 && rt == 0);
         assert(!manager.usedBorrowerNonce(borrower, 900) && !manager.usedLenderNonce(lender, 901));
@@ -89,8 +90,8 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         _fundPayer(borrower, payoff);
         vm.prank(borrower);
         manager.repay(loan, payoff, 1);
-        (, CreditManager.State state,) = manager.agreement(loan);
-        assert(state == CreditManager.State.Closed);
+        (, CreditManagerCore.State state,) = manager.agreement(loan);
+        assert(state == CreditManagerCore.State.Closed);
         assert(manager.principal(loan) == 0 && manager.accruedInterest(loan) == 0);
         assert(manager.totalPrincipalPaid(loan) == max && manager.totalInterestPaid(loan) == max / 20);
         assert(vault.free(lender) == freeBefore + payoff);
@@ -99,21 +100,21 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
     function testOneBaseUnitAboveEachFinancialLimitRejected() public {
         uint256 max = manager.MAX_COMMITMENT();
 
-        CreditManager.Terms memory overCap = _envelopeTerms(max + 1, max + 1, 940);
+        CreditManagerCore.Terms memory overCap = _envelopeTerms(max + 1, max + 1, 940);
         (bytes memory bs, bytes memory ls) = _sign(overCap);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(overCap, bs, ls);
         assert(!manager.usedBorrowerNonce(borrower, 940) && !manager.usedLenderNonce(lender, 941));
 
-        CreditManager.Terms memory overPrincipal = _envelopeTerms(max, max + 1, 942);
+        CreditManagerCore.Terms memory overPrincipal = _envelopeTerms(max, max + 1, 942);
         (bs, ls) = _sign(overPrincipal);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(overPrincipal, bs, ls);
         assert(!manager.usedBorrowerNonce(borrower, 942) && !manager.usedLenderNonce(lender, 943));
 
         (bytes32 loan, bytes32 operation) = _prepareLoan(max, max, 944);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(loan, operation, max + 1);
         assert(manager.principal(loan) == 0 && manager.pendingDraw(loan) == operation);
         vm.prank(borrower);
@@ -124,7 +125,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
 
     function testMaximumAgreementDurationAndOneSecondBeyond() public {
         uint64 drawDeadline = uint64(block.timestamp + 1000);
-        CreditManager.Terms memory accepted = terms;
+        CreditManagerCore.Terms memory accepted = terms;
         accepted.borrowerNonce = 950;
         accepted.lenderNonce = 951;
         accepted.consentDeadline = uint64(block.timestamp);
@@ -133,16 +134,16 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         accepted = _withLot(accepted);
         (bytes memory bs, bytes memory ls) = _sign(accepted);
         bytes32 loan = manager.register(accepted, bs, ls);
-        (CreditManager.Terms memory stored,,) = manager.agreement(loan);
+        (CreditManagerCore.Terms memory stored,,) = manager.agreement(loan);
         assert(stored.maturity - stored.drawDeadline == 365 days);
 
-        CreditManager.Terms memory rejected = accepted;
+        CreditManagerCore.Terms memory rejected = accepted;
         rejected.borrowerNonce = 952;
         rejected.lenderNonce = 953;
         rejected.maturity = uint64(uint256(rejected.maturity) + 1);
         rejected = _withLot(rejected);
         (bs, ls) = _sign(rejected);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(rejected, bs, ls);
         assert(!manager.usedBorrowerNonce(borrower, 952) && !manager.usedLenderNonce(lender, 953));
     }
@@ -150,23 +151,23 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
     function testInvalidTimestampConversionsRevert() public {
         manager.executePending(id, op, 200e6);
         assert(manager.checkedTimestamp(uint256(type(uint64).max)) == type(uint64).max);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.checkedTimestamp(uint256(type(uint64).max) + 1);
 
         uint64 recorded = manager.lastAccrued(id);
         vm.warp(uint256(recorded) - 1);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.debtPreview(id);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.accrueInterest(id);
 
         vm.warp(uint256(type(uint64).max) + 1);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.debtPreview(id);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.accrueInterest(id);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidTimestamp.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTimestamp.selector);
         manager.repay(id, 1, 77);
         assert(manager.principal(id) == 200e6 && manager.accruedInterest(id) == 0);
     }
@@ -202,8 +203,8 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         manager.executePending(id, op, 200e6);
         vm.warp(uint256(terms.maturity) + uint256(terms.grace));
         manager.markDefault(id);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Defaulted);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Defaulted);
 
         uint256 at = manager.MAX_ACCRUAL_SECONDS() - 1000;
         vm.warp(at);
@@ -220,20 +221,20 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(manager.principal(id) == 200e6 && manager.accruedInterest(id) == interest - part);
         assert(manager.totalInterestPaid(id) == part && vault.free(lender) == 400e6 + part);
         (, state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Defaulted);
+        assert(state == CreditManagerCore.State.Defaulted);
 
         vm.warp(at + 1);
         (,, uint256 payoff) = manager.debtPreview(id);
         vm.prank(borrower);
         manager.repay(id, payoff, 2);
         (, state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Closed);
+        assert(state == CreditManagerCore.State.Closed);
         assert(manager.principal(id) == 0 && manager.accruedInterest(id) == 0 && manager.interestRemainder(id) == 0);
         assert(manager.totalPrincipalPaid(id) == 200e6);
         assert(manager.totalInterestPaid(id) > interest);
         assert(vault.free(lender) == 400e6 + part + payoff);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.repay(id, 1, 3);
     }
 
@@ -280,11 +281,11 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(p == 0 && interest == 1 && total == 1);
         vm.prank(borrower);
         manager.repay(loan, 1, 2);
-        (, CreditManager.State state,) = manager.agreement(loan);
-        assert(state == CreditManager.State.Closed);
+        (, CreditManagerCore.State state,) = manager.agreement(loan);
+        assert(state == CreditManagerCore.State.Closed);
         assert(manager.totalInterestAccrued(loan) == whole + 1 && manager.totalInterestPaid(loan) == whole + 1);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.repay(loan, 1, 3);
         assert(manager.totalInterestPaid(loan) == whole + 1);
     }
@@ -295,9 +296,10 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         uint256 cashBefore = token.balanceOf(address(vault));
         uint256 commitmentBefore = vault.commitments(lender, id);
 
-        CreditManager.Terms memory overCap = _envelopeTerms(manager.MAX_COMMITMENT() + 1, manager.MAX_COMMITMENT(), 980);
+        CreditManagerCore.Terms memory overCap =
+            _envelopeTerms(manager.MAX_COMMITMENT() + 1, manager.MAX_COMMITMENT(), 980);
         (bytes memory bs, bytes memory ls) = _sign(overCap);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(overCap, bs, ls);
 
         assert(vault.free(lender) == freeBefore && vault.reserved(lender) == reservedBefore);
@@ -305,14 +307,14 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(!manager.usedBorrowerNonce(borrower, 980) && !manager.usedLenderNonce(lender, 981));
 
         uint64 deadline = uint64(block.timestamp + 1000);
-        CreditManager.Terms memory tooLong = terms;
+        CreditManagerCore.Terms memory tooLong = terms;
         tooLong.borrowerNonce = 982;
         tooLong.lenderNonce = 983;
         tooLong.drawDeadline = deadline;
         tooLong.maturity = uint64(uint256(deadline) + uint256(manager.MAX_TERM()) + 1);
         tooLong = _withLot(tooLong);
         (bs, ls) = _sign(tooLong);
-        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        vm.expectRevert(CreditManagerCore.InvalidTerms.selector);
         manager.register(tooLong, bs, ls);
         assert(!manager.usedBorrowerNonce(borrower, 982) && !manager.usedLenderNonce(lender, 983));
         assert(vault.free(lender) == freeBefore && vault.reserved(lender) == reservedBefore);
@@ -329,15 +331,15 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         assert(manager.principal(id) == 200e6 && manager.accruedInterest(id) == 5e6);
         vm.prank(borrower);
         manager.repay(id, 205e6, 2);
-        (, CreditManager.State state,) = manager.agreement(id);
-        assert(state == CreditManager.State.Closed);
+        (, CreditManagerCore.State state,) = manager.agreement(id);
+        assert(state == CreditManagerCore.State.Closed);
         assert(manager.totalInterestPaid(id) == 10e6 && manager.totalPrincipalPaid(id) == 200e6);
     }
 
     function _envelopeTerms(uint256 cap, uint256 repayment, uint256 nonce)
         private
         view
-        returns (CreditManager.Terms memory t)
+        returns (CreditManagerCore.Terms memory t)
     {
         t = terms;
         t.cap = cap;
@@ -347,12 +349,12 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         t = _withLot(t);
     }
 
-    function _withLot(CreditManager.Terms memory t) private view returns (CreditManager.Terms memory) {
+    function _withLot(CreditManagerCore.Terms memory t) private view returns (CreditManagerCore.Terms memory) {
         t.lotId = keccak256(abi.encode("LOT_V1", t.collateralChainId, t.collateralVault, manager.agreementId(t)));
         return t;
     }
 
-    function _sign(CreditManager.Terms memory t)
+    function _sign(CreditManagerCore.Terms memory t)
         private
         returns (bytes memory borrowerSignature, bytes memory lenderSignature)
     {
@@ -377,7 +379,7 @@ contract CreditArithmeticBoundaryTest is CreditExecutionTest {
         private
         returns (bytes32 loan, bytes32 operation)
     {
-        CreditManager.Terms memory t = _envelopeTerms(cap, repayment, nonce);
+        CreditManagerCore.Terms memory t = _envelopeTerms(cap, repayment, nonce);
         (bytes memory bs, bytes memory ls) = _sign(t);
         loan = manager.register(t, bs, ls);
         token.mint(lender, cap);

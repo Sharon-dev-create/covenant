@@ -2,6 +2,7 @@
 pragma solidity 0.8.29;
 
 import {CreditManager} from "../src/CreditManager.sol";
+import {CreditManagerCore} from "../src/CreditManagerCore.sol";
 import {CreditLiquidityVault} from "../src/CreditLiquidityVault.sol";
 import {LocalCreditFactory} from "../src/LocalCreditFactory.sol";
 import {ReservationState} from "../src/ProtocolTypes.sol";
@@ -39,7 +40,7 @@ contract CreditExecutionTest {
     LocalRepaymentAdapter adapter;
     CreditManager manager;
     CreditLiquidityVault vault;
-    CreditManager.Terms terms;
+    CreditManagerCore.Terms terms;
     bytes32 id;
     bytes32 op;
     address borrower;
@@ -58,7 +59,7 @@ contract CreditExecutionTest {
             new LocalCreditFactory(address(token), address(collateral), address(oracle), address(adapter));
         manager = CreditManager(factory.manager());
         vault = CreditLiquidityVault(factory.vault());
-        terms = CreditManager.Terms(
+        terms = CreditManagerCore.Terms(
             borrower,
             lender,
             address(0x55),
@@ -118,7 +119,7 @@ contract CreditExecutionTest {
                 && token.allowance(address(adapter), address(market)) == 0
         );
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.executePending(id, op, 1);
     }
 
@@ -128,27 +129,27 @@ contract CreditExecutionTest {
         assert(manager.principal(id) == 200e6 && market.debt(borrower) == 600e6);
         assert(vault.free(lender) == 400e6 && vault.reserved(lender) == 0);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.executePending(id, op, 200e6);
     }
 
     function testRecoveredPositionClearsPendingAndCanReobserve() public {
         market.setPosition(borrower, 800e6, 1000e6);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         _unchanged();
         bytes32 old = op;
         vm.prank(address(0xBEEF));
         manager.clearRecoveredRisk(id);
         assert(manager.pendingDraw(id) == bytes32(0));
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.observeRisk(id);
         market.setPosition(borrower, 800e6, 840e6);
         bytes32 next = manager.observeRisk(id);
         assert(next != old);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.executePending(id, old, 200e6);
         vm.prank(address(0xBEEF));
         manager.executePending(id, next, 200e6);
@@ -166,13 +167,13 @@ contract CreditExecutionTest {
         vm.expectRevert();
         collateral.set(id, terms.lotId, borrower, 100 ether);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.observeRisk(id);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.clearRecoveredRisk(id);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 199e6);
         _unchanged();
     }
@@ -207,32 +208,32 @@ contract CreditExecutionTest {
 
     function testEligibilityAndPrice() public {
         vm.prank(address(0xBEEF));
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 1);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.executePending(id, bytes32(uint256(2)), 200e6);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 501e6);
         oracle.set(100e6, block.timestamp);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         oracle.set(2000e6, block.timestamp - 3601);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidPrice.selector);
+        vm.expectRevert(CreditManagerCore.InvalidPrice.selector);
         manager.executePending(id, op, 200e6);
         _unchanged();
     }
 
     function testCollateralExpiryZeroAndTokenFailureRollback() public {
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 0);
         collateral.set(id, terms.lotId, borrower, 2 ether);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        vm.expectRevert(CreditManagerCore.InvalidCollateral.selector);
         manager.executePending(id, op, 200e6);
         collateral.set(id, terms.lotId, borrower, 1 ether);
         token.configure(true, false, address(0));
@@ -243,34 +244,34 @@ contract CreditExecutionTest {
         _unchanged();
         vm.warp(terms.drawDeadline);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.executePending(id, op, 200e6);
     }
 
     function testRiskRequiresDistressAndCannotDuplicatePending() public {
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.observeRisk(id);
         vm.prank(borrower);
         manager.cancelUnused(id);
         assert(manager.pendingDraw(id) == bytes32(0));
-        vm.expectRevert(CreditManager.InvalidState.selector);
+        vm.expectRevert(CreditManagerCore.InvalidState.selector);
         manager.observeRisk(id);
     }
 
     function testIncorrectBindingAndDebtRevalidation() public {
         vm.mockCall(address(adapter), abi.encodeWithSignature("market()"), abi.encode(address(0xBAD)));
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         vm.clearMockedCalls();
         vm.mockCall(address(market), abi.encodeWithSignature("asset()"), abi.encode(address(0xBAD)));
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         vm.clearMockedCalls();
         market.setPosition(borrower, 100e6, 105e6);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         assert(manager.pendingDraw(id) == op && manager.principal(id) == 0);
     }
@@ -279,12 +280,12 @@ contract CreditExecutionTest {
         token.mint(address(adapter), 1);
         adapter.configurePost(true, false);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         _unchanged();
         adapter.configurePost(false, true);
         vm.prank(borrower);
-        vm.expectRevert(CreditManager.InvalidExecution.selector);
+        vm.expectRevert(CreditManagerCore.InvalidExecution.selector);
         manager.executePending(id, op, 200e6);
         _unchanged();
         assert(token.balanceOf(address(adapter)) == 1);
