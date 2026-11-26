@@ -8,6 +8,7 @@ interface IExecutionToken {
     function balanceOf(address) external view returns (uint256);
     function allowance(address, address) external view returns (uint256);
     function approve(address, uint256) external returns (bool);
+    function decimals() external view returns (uint8);
 }
 
 interface ILocalMarket {
@@ -41,6 +42,7 @@ contract CreditManager {
     error Reentrant();
     error InvalidExecution();
     error InvalidRepayment();
+    error InvalidTimestamp();
 
     enum State {
         Absent,
@@ -89,6 +91,22 @@ contract CreditManager {
     uint256 public constant APR_BPS = 500;
     uint256 public constant INTEREST_DENOMINATOR = 630720000;
 
+    /// @notice Financial operating envelope: 1,000,000 six-decimal USDC units per agreement.
+    uint256 public constant MAX_COMMITMENT = 1_000_000 * 1_000_000;
+    uint256 public constant MAX_PRINCIPAL = 1_000_000 * 1_000_000;
+    /// @notice Contractual term from draw deadline to maturity. Post-maturity accrual is not bounded by this value.
+    uint64 public constant MAX_TERM = 365 days;
+    /// @notice Timestamps are represented as uint64. Interest may accrue over the entire representable range.
+    uint256 public constant MAX_ACCRUAL_SECONDS = uint256(type(uint64).max);
+    /// @notice Tight upper bound on whole-unit interest for one maximum principal over the full uint64 range.
+    uint256 public constant MAX_SUPPORTED_INTEREST =
+        (MAX_PRINCIPAL / INTEREST_DENOMINATOR) * MAX_ACCRUAL_SECONDS
+            + (MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS / INTEREST_DENOMINATOR)
+            + ((MAX_PRINCIPAL % INTEREST_DENOMINATOR) * (MAX_ACCRUAL_SECONDS % INTEREST_DENOMINATOR))
+                / INTEREST_DENOMINATOR
+            + 1;
+    uint256 public constant MAX_SUPPORTED_CLAIM = MAX_PRINCIPAL + MAX_SUPPORTED_INTEREST;
+
     address public immutable vault;
     address public immutable asset;
     address public immutable localCollateralVerifier;
@@ -102,8 +120,8 @@ contract CreditManager {
     mapping(bytes32 => bytes32) public pendingDraw;
     mapping(bytes32 => bool) public completedDraw;
     mapping(bytes32 => uint256) public principal;
-    mapping(bytes32 => uint256) public drawTimestamp;
-    mapping(bytes32 => uint256) public lastAccrued;
+    mapping(bytes32 => uint64) public drawTimestamp;
+    mapping(bytes32 => uint64) public lastAccrued;
     mapping(bytes32 => uint256) public accruedInterest;
     mapping(bytes32 => uint256) public interestRemainder;
     mapping(bytes32 => uint256) public totalInterestAccrued;
@@ -141,6 +159,11 @@ contract CreditManager {
                 || localCollateralVerifier_.code.length == 0 || localOracle_.code.length == 0
                 || localAdapter_ == address(0)
         ) revert InvalidTerms();
+        (bool decimalsOk, bytes memory decimalsResult) =
+            asset_.staticcall(abi.encodeCall(IExecutionToken.decimals, ()));
+        if (!decimalsOk || decimalsResult.length != 32 || abi.decode(decimalsResult, (uint8)) != 6) {
+            revert InvalidTerms();
+        }
         vault = vault_;
         asset = asset_;
         localCollateralVerifier = localCollateralVerifier_;
@@ -181,18 +204,31 @@ contract CreditManager {
         return keccak256(abi.encodePacked("\x19\x01", domain, termsHash(terms)));
     }
 
+    /// @notice Rejects any timestamp that cannot be represented by the uint64 storage representation.
+    function checkedTimestamp(uint256 value) public pure returns (uint64 checked) {
+        if (value > MAX_ACCRUAL_SECONDS) revert InvalidTimestamp();
+        // Bounded by the check above; assignment truncates only values known to fit.
+        assembly ("memory-safe") {
+            checked := value
+        }
+    }
+
     function register(Terms calldata terms, bytes calldata borrowerSignature, bytes calldata lenderSignature)
         external
         nonReentrant
         returns (bytes32 id)
     {
+        uint64 now_ = checkedTimestamp(block.timestamp);
         if (
             terms.borrower == address(0) || terms.lender == address(0) || terms.collateralVault == address(0)
                 || terms.collateralChainId == 0 || terms.collateralAmount == 0 || terms.market == address(0)
                 || terms.debtor != terms.borrower || terms.policy != bytes32(uint256(1)) || terms.cap == 0
-                || terms.autonomousRepayment == 0 || terms.autonomousRepayment > terms.cap || terms.maxHealth == 0
-                || terms.ltvBps == 0 || terms.ltvBps > 5000 || terms.consentDeadline < block.timestamp
-                || terms.drawDeadline <= block.timestamp || terms.maturity <= terms.drawDeadline
+                || terms.cap > MAX_COMMITMENT || terms.autonomousRepayment == 0
+                || terms.autonomousRepayment > MAX_PRINCIPAL || terms.autonomousRepayment > terms.cap
+                || terms.maxHealth == 0 || terms.ltvBps == 0 || terms.ltvBps > 5000
+                || terms.consentDeadline < now_ || terms.drawDeadline <= now_
+                || terms.maturity <= terms.drawDeadline
+                || uint256(terms.maturity) - uint256(terms.drawDeadline) > uint256(MAX_TERM)
         ) revert InvalidTerms();
         bytes32 expectedLot =
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, agreementId(terms)));
@@ -224,7 +260,8 @@ contract CreditManager {
 
     function observeRisk(bytes32 id) external nonReentrant returns (bytes32 operationId) {
         Agreement storage a = agreements[id];
-        if (a.state != State.Active || block.timestamp >= a.terms.drawDeadline || pendingDraw[id] != bytes32(0)) {
+        uint64 now_ = checkedTimestamp(block.timestamp);
+        if (a.state != State.Active || now_ >= a.terms.drawDeadline || pendingDraw[id] != bytes32(0)) {
             revert InvalidState();
         }
         if (
@@ -258,28 +295,29 @@ contract CreditManager {
     function executePending(bytes32 id, bytes32 operationId, uint256 amount) external nonReentrant {
         Agreement storage a = agreements[id];
         Terms storage t = a.terms;
+        uint64 now_ = checkedTimestamp(block.timestamp);
         if (
-            a.state != State.Active || block.timestamp >= t.drawDeadline || operationId == bytes32(0)
+            a.state != State.Active || now_ >= t.drawDeadline || operationId == bytes32(0)
                 || pendingDraw[id] != operationId || completedDraw[operationId]
         ) revert InvalidState();
-        _validateDraw(id, a, amount);
+        _validateDraw(id, a, amount, now_);
         _repayMarket(t, a.reservationId, amount);
         principal[id] = amount;
-        drawTimestamp[id] = block.timestamp;
-        lastAccrued[id] = block.timestamp;
+        drawTimestamp[id] = now_;
+        lastAccrued[id] = now_;
         completedDraw[operationId] = true;
         delete pendingDraw[id];
         a.state = State.Drawn;
-        emit DrawExecuted(id, operationId, amount, block.timestamp);
+        emit DrawExecuted(id, operationId, amount, now_);
     }
 
-    function _validateDraw(bytes32 id, Agreement storage a, uint256 amount) private view {
+    function _validateDraw(bytes32 id, Agreement storage a, uint256 amount, uint256 now_) private view {
         Terms storage t = a.terms;
         if (!ILocalCollateralVerifier(localCollateralVerifier).verify(id, t.lotId, t.borrower, t.collateralAmount)) {
             revert InvalidCollateral();
         }
         (uint256 value, uint256 updatedAt) = ILocalCollateralOracle(localOracle).valueUSDC(t.collateralAmount);
-        if (value == 0 || updatedAt == 0 || updatedAt > block.timestamp || block.timestamp - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
+        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
         uint256 limit = value / 10000 * t.ltvBps + (value % 10000) * t.ltvBps / 10000;
         ILocalMarket market = ILocalMarket(t.market);
         ILocalAdapter adapter = ILocalAdapter(localAdapter);
@@ -291,7 +329,8 @@ contract CreditManager {
             CreditLiquidityVault(vault).reservations(a.reservationId);
         if (
             lender != t.lender || agreementId_ != id || state != ReservationState.Reserved
-                || amount != t.autonomousRepayment || amount > reserved || amount > t.cap || amount > limit
+                || amount != t.autonomousRepayment || amount > MAX_PRINCIPAL || amount > reserved || amount > t.cap
+                || amount > limit
         ) revert InvalidExecution();
         if (amount > market.debt(t.borrower)) revert InvalidExecution();
     }
@@ -398,7 +437,8 @@ contract CreditManager {
 
     function markDefault(bytes32 id) external nonReentrant {
         Agreement storage a = agreements[id];
-        if (a.state != State.Drawn || block.timestamp < uint256(a.terms.maturity) + uint256(a.terms.grace)) {
+        uint64 now_ = checkedTimestamp(block.timestamp);
+        if (a.state != State.Drawn || uint256(now_) < uint256(a.terms.maturity) + uint256(a.terms.grace)) {
             revert InvalidState();
         }
         _accrue(id);
@@ -408,21 +448,32 @@ contract CreditManager {
     }
 
     function _accrue(bytes32 id) private {
-        (uint256 interest, uint256 remainder) = _previewInterest(id);
+        uint64 now_ = checkedTimestamp(block.timestamp);
+        (uint256 interest, uint256 remainder) = _previewInterestAt(id, now_);
         uint256 delta = interest - accruedInterest[id];
         accruedInterest[id] = interest;
         interestRemainder[id] = remainder;
         totalInterestAccrued[id] += delta;
-        lastAccrued[id] = block.timestamp;
+        lastAccrued[id] = now_;
         emit InterestAccrued(id, delta, remainder);
     }
 
     function _previewInterest(bytes32 id) private view returns (uint256 interest, uint256 remainder) {
+        return _previewInterestAt(id, checkedTimestamp(block.timestamp));
+    }
+
+    function _previewInterestAt(bytes32 id, uint64 now_)
+        private
+        view
+        returns (uint256 interest, uint256 remainder)
+    {
         interest = accruedInterest[id];
         remainder = interestRemainder[id];
+        uint64 last = lastAccrued[id];
+        if (now_ < last) revert InvalidTimestamp();
         uint256 p = principal[id];
         if (p == 0) return (interest, remainder);
-        uint256 elapsed = block.timestamp - lastAccrued[id];
+        uint256 elapsed = uint256(now_ - last);
         uint256 denominator = INTEREST_DENOMINATOR;
         // Decompose both operands to avoid overflowing an intermediate product when the quotient fits.
         uint256 delta = (p / denominator) * elapsed + (p % denominator) * (elapsed / denominator);
@@ -435,11 +486,12 @@ contract CreditManager {
     function activate(bytes32 id) external nonReentrant {
         Agreement storage agreement = agreements[id];
         Terms storage terms = agreement.terms;
-        if (agreement.state != State.Draft || block.timestamp >= terms.drawDeadline) revert InvalidState();
+        uint64 now_ = checkedTimestamp(block.timestamp);
+        if (agreement.state != State.Draft || now_ >= terms.drawDeadline) revert InvalidState();
         if (!ILocalCollateralVerifier(localCollateralVerifier)
                 .verify(id, terms.lotId, terms.borrower, terms.collateralAmount)) revert InvalidCollateral();
         (uint256 value, uint256 updatedAt) = ILocalCollateralOracle(localOracle).valueUSDC(terms.collateralAmount);
-        if (value == 0 || updatedAt == 0 || updatedAt > block.timestamp || block.timestamp - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
+        if (value == 0 || updatedAt == 0 || updatedAt > now_ || now_ - updatedAt > MAX_PRICE_AGE) revert InvalidPrice();
         if (terms.cap > value / 10000 * terms.ltvBps + (value % 10000) * terms.ltvBps / 10000) revert InvalidPrice();
         agreement.state = State.Active;
         agreement.reservationId = CreditLiquidityVault(vault).reserve(id, terms.lender, terms.cap);
@@ -454,7 +506,7 @@ contract CreditManager {
 
     function expireUnused(bytes32 id) external nonReentrant {
         Agreement storage agreement = agreements[id];
-        if (block.timestamp < agreement.terms.drawDeadline) revert InvalidState();
+        if (checkedTimestamp(block.timestamp) < agreement.terms.drawDeadline) revert InvalidState();
         _close(id, agreement);
     }
 
