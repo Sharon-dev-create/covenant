@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.29;
+
+import {CreditManager} from "../src/CreditManager.sol";
+import {LocalCreditFactory} from "../src/LocalCreditFactory.sol";
+import {CreditLiquidityVault} from "../src/CreditLiquidityVault.sol";
+import {MockUSDC} from "./mocks/MockUSDC.sol";
+import {LocalCollateralFixture, LocalOracleFixture} from "./mocks/LocalCreditFixtures.sol";
+import {InsufficientLiquidity} from "../src/ProtocolTypes.sol";
+
+interface CreditVm {
+    function addr(uint256) external returns (address);
+    function sign(uint256, bytes32) external returns (uint8, bytes32, bytes32);
+    function prank(address) external;
+    function warp(uint256) external;
+    function chainId(uint256) external;
+    function getNonce(address) external view returns (uint64);
+    function computeCreateAddress(address, uint256) external pure returns (address);
+    function expectRevert(bytes4) external;
+    function expectRevert() external;
+}
+
+contract CreditManagerTest {
+    CreditVm private constant vm = CreditVm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    uint256 private constant BORROWER_KEY = 0xA11CE;
+    uint256 private constant LENDER_KEY = 0xB0B;
+    MockUSDC private token;
+    LocalCollateralFixture private collateral;
+    LocalOracleFixture private oracle;
+    CreditManager private manager;
+    CreditLiquidityVault private vault;
+    LocalCreditFactory private factory;
+    CreditManager.Terms private terms;
+
+    function setUp() public {
+        vm.warp(10000);
+        token = new MockUSDC();
+        collateral = new LocalCollateralFixture();
+        oracle = new LocalOracleFixture();
+        factory = new LocalCreditFactory(address(token), address(collateral), address(oracle), address(0x123));
+        manager = CreditManager(factory.manager());
+        vault = CreditLiquidityVault(factory.vault());
+        terms = CreditManager.Terms(
+            vm.addr(BORROWER_KEY),
+            vm.addr(LENDER_KEY),
+            address(0x55),
+            1301,
+            bytes32(0),
+            1 ether,
+            address(0x42),
+            vm.addr(BORROWER_KEY),
+            bytes32(uint256(1)),
+            500e6,
+            1,
+            11000,
+            12000,
+            13000,
+            100,
+            5000
+        );
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        token.mint(terms.lender, 1000e6);
+        vm.prank(terms.lender);
+        token.approve(address(vault), 1000e6);
+        vm.prank(terms.lender);
+        vault.deposit(1000e6);
+        oracle.set(2000e6, block.timestamp);
+    }
+
+    function testDeploymentBindingsAndNoFactoryDeploymentEntry() public view {
+        assert(factory.manager() == factory.predict(address(factory), 1));
+        assert(factory.vault() == factory.predict(address(factory), 2));
+        assert(manager.vault() == address(vault) && manager.asset() == address(token));
+        assert(vault.manager() == address(manager) && vault.consumer() == address(manager));
+    }
+
+    function testRegisterActivateCancelAndReplay() public {
+        bytes32 id = _register();
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
+        vm.prank(terms.lender);
+        vault.setCommitment(id, terms.cap);
+        manager.activate(id);
+        (, CreditManager.State state, bytes32 reservation) = manager.agreement(id);
+        assert(state == CreditManager.State.Active && vault.reserved(terms.lender) == terms.cap);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.activate(id);
+        vm.prank(terms.borrower);
+        manager.cancelUnused(id);
+        assert(vault.free(terms.lender) == 1000e6 && vault.reserved(terms.lender) == 0);
+        (,, uint256 amount,) = vault.reservations(reservation);
+        assert(amount == 0);
+        vm.prank(terms.borrower);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.cancelUnused(id);
+        bytes memory borrowerSignature = _signature(BORROWER_KEY);
+        bytes memory lenderSignature = _signature(LENDER_KEY);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, borrowerSignature, lenderSignature);
+    }
+
+    function testWrongSignaturesAndTerms() public {
+        bytes memory wrongSignature = _signature(LENDER_KEY);
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, wrongSignature, wrongSignature);
+        terms.ltvBps = 5001;
+        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        manager.register(terms, "", "");
+    }
+
+    function testCollateralOracleCommitmentAndCashGuards() public {
+        bytes32 id = _register();
+        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        manager.activate(id);
+        collateral.set(id, terms.lotId, address(0x99), terms.collateralAmount);
+        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        manager.activate(id);
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount - 1);
+        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        manager.activate(id);
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
+        oracle.set(2000e6, block.timestamp - 3601);
+        vm.expectRevert(CreditManager.InvalidPrice.selector);
+        manager.activate(id);
+        oracle.set(999e6, block.timestamp);
+        vm.expectRevert(CreditManager.InvalidPrice.selector);
+        manager.activate(id);
+        oracle.set(2000e6, block.timestamp);
+        vm.expectRevert();
+        manager.activate(id);
+        vm.prank(terms.lender);
+        vault.setCommitment(id, terms.cap);
+        vm.prank(terms.lender);
+        vault.withdraw(1000e6);
+        vm.expectRevert(InsufficientLiquidity.selector);
+        manager.activate(id);
+        (, CreditManager.State state,) = manager.agreement(id);
+        assert(state == CreditManager.State.Draft);
+    }
+
+    function testCancelAndExpiryAuthorization() public {
+        bytes32 id = _register();
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.cancelUnused(id);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.expireUnused(id);
+        vm.warp(terms.drawDeadline);
+        manager.expireUnused(id);
+        (, CreditManager.State state,) = manager.agreement(id);
+        assert(state == CreditManager.State.Closed);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.expireUnused(id);
+    }
+
+    function testActiveExpiryReturnsReservation() public {
+        bytes32 id = _register();
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
+        vm.prank(terms.lender);
+        vault.setCommitment(id, terms.cap);
+        manager.activate(id);
+        vm.warp(terms.drawDeadline);
+        manager.expireUnused(id);
+        assert(vault.free(terms.lender) == 1000e6 && vault.reserved(terms.lender) == 0);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.activate(id);
+    }
+
+    function testConflictingLotAndNonceCannotRegister() public {
+        bytes32 id = _register();
+        bytes32 firstLot = terms.lotId;
+        terms.nonce = 2;
+        terms.lotId = firstLot;
+        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        manager.register(terms, "", "");
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
+        bytes32 second = _register();
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
+        vm.expectRevert(CreditManager.InvalidCollateral.selector);
+        manager.activate(id);
+        assert(second != id);
+    }
+
+    function testFactoryRejectsWrongChainInvalidDependenciesAndRepeatCalls() public {
+        address failedFactory = vm.computeCreateAddress(address(this), vm.getNonce(address(this)));
+        address failedManager = factory.predict(failedFactory, 1);
+        address failedVault = factory.predict(failedFactory, 2);
+        vm.expectRevert(CreditManager.InvalidTerms.selector);
+        new LocalCreditFactory(address(0), address(collateral), address(oracle), address(0x123));
+        assert(failedFactory.code.length == 0 && failedManager.code.length == 0 && failedVault.code.length == 0);
+        (bool ok,) = address(factory)
+            .call(
+                abi.encodeWithSignature(
+                    "deploy(address,address,address,address)",
+                    address(token),
+                    address(collateral),
+                    address(oracle),
+                    address(0x123)
+                )
+            );
+        assert(!ok);
+        vm.chainId(84532);
+        vm.expectRevert(LocalCreditFactory.InvalidDeployment.selector);
+        new LocalCreditFactory(address(token), address(collateral), address(oracle), address(0x123));
+    }
+
+    function testFuzzLtvBoundary(uint64 value) public {
+        bytes32 id = _register();
+        collateral.set(id, terms.lotId, terms.borrower, terms.collateralAmount);
+        vm.prank(terms.lender);
+        vault.setCommitment(id, terms.cap);
+        oracle.set(uint256(value), block.timestamp);
+        if (uint256(value) / 2 < terms.cap) {
+            vm.expectRevert(CreditManager.InvalidPrice.selector);
+            manager.activate(id);
+        } else {
+            manager.activate(id);
+            assert(vault.reserved(terms.lender) == terms.cap);
+        }
+    }
+
+    function _register() private returns (bytes32) {
+        return manager.register(terms, _signature(BORROWER_KEY), _signature(LENDER_KEY));
+    }
+
+    function _signature(uint256 key) private returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, manager.digest(terms));
+        return abi.encodePacked(r, s, v);
+    }
+}

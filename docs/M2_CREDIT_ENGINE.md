@@ -1,6 +1,12 @@
 # M2 credit engine preparation
 
-Status: proposed for review. Implementation has not been authorized. Live Reactive transport, independent finality, external market integration and lender recovery remain unverified.
+## M2-B local lifecycle implementation
+
+`CreditManager` and `LocalCreditFactory` are local-chain-only lifecycle components. Bilateral EOA EIP-712 signatures and the borrower's unique nonce authorize a Draft. Activation checks the local collateral and oracle fixtures, then atomically reserves lender-committed liquidity. The borrower can close a Draft or Active agreement, and anyone can expire one at the draw deadline. There is no drawdown, repayment, release, or production ingress entry point. The fixture's values and assertions are test data, not cross-chain or market evidence. The oracle's local freshness window is one hour. Contract-wallet signatures are not yet supported.
+
+To avoid a circular dependence between the derived agreement and lot IDs, `termsHash` normalizes `lotId` to zero before hashing the EIP-712 `Terms` struct. Signers must sign that normalized typed data. Registration independently requires the supplied lot to equal `keccak256(abi.encode("LOT_V1", collateralChainId, collateralVault, agreementId))`. The fixed manager, vault, asset, adapter and fixture configuration are bound through the EIP-712 manager domain and immutable deployment, rather than repeated as fields in this local struct. This normalization is an implementation decision requiring client and security review before any integration.
+
+Status: M2-B local lifecycle implementation authorized. This document also describes proposed future financial operations. Live Reactive transport, independent finality, external market integration and lender recovery remain unverified.
 
 ## Scope and existing boundaries
 
