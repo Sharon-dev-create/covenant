@@ -43,7 +43,7 @@ contract M3DProxy {
 }
 
 contract M3DFinancialCallbackTest is M3CDemoTest {
-    M3DVm private constant vmd = M3DVm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    M3DVm internal constant vmd = M3DVm(address(uint160(uint256(keccak256("hevm cheat code")))));
     RiskSignalRegistry registry;
     FinancialReactive reactiveContract;
     FinancialCallbackReceiver receiver;
@@ -80,7 +80,7 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         verifier.acceptLock(a, sigs);
     }
 
-    function _setupIntegration() private {
+    function _setupIntegration() internal {
         _attest();
         manager.activate(id);
         registry = new RiskSignalRegistry(address(manager), address(market));
@@ -109,7 +109,7 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         vmd.chainId(FinancialTrigger.BASE);
     }
 
-    function _signal() private returns (IOmniReactive.LogRecord memory entry, bytes32 triggerId) {
+    function _signal() internal returns (IOmniReactive.LogRecord memory entry, bytes32 triggerId) {
         vmd.recordLogs();
         uint64 generation = registry.signal(id);
         M3DVm.Log[] memory logs = vmd.getRecordedLogs();
@@ -135,7 +135,7 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
     }
 
     function _request(IOmniReactive.LogRecord memory entry)
-        private
+        internal
         returns (IOmniSystem.CallbackConfiguration memory c)
     {
         vmd.chainId(FinancialTrigger.LASNA);
@@ -146,7 +146,7 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         vmd.chainId(FinancialTrigger.BASE);
     }
 
-    function _deliver(IOmniSystem.CallbackConfiguration memory c) private {
+    function _deliver(IOmniSystem.CallbackConfiguration memory c) internal {
         PROXY.deliver(address(receiver), address(reactiveContract), c.payload);
     }
 
