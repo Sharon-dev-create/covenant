@@ -2,7 +2,7 @@
 
 ## M2-B local lifecycle implementation
 
-`CreditManager` and `LocalCreditFactory` are local-chain-only lifecycle components. Bilateral EOA EIP-712 signatures and the borrower's unique nonce authorize a Draft. Activation checks the local collateral and oracle fixtures, then atomically reserves lender-committed liquidity. The borrower can close a Draft or Active agreement, and anyone can expire one at the draw deadline. There is no drawdown, repayment, release, or production ingress entry point. The fixture's values and assertions are test data, not cross-chain or market evidence. The oracle's local freshness window is one hour. Contract-wallet signatures are not yet supported.
+`CreditManager` and `LocalCreditFactory` are local-chain-only lifecycle components. Bilateral EOA EIP-712 signatures and independently controlled borrower and lender nonces authorize a Draft. Each role can invalidate its own unused nonces in any order, including when the same address holds both roles. Registration consumes both atomically. Revocation does not affect a registered agreement or reservation. Activation checks the local collateral and oracle fixtures, then atomically reserves lender-committed liquidity. The borrower can close a Draft or Active agreement, and anyone can expire one at the draw deadline. There is no drawdown, repayment, release, or production ingress entry point. The fixture's values and assertions are test data, not cross-chain or market evidence. The oracle's local freshness window is one hour. Contract-wallet signatures are not yet supported. The version 2 schema breaks compatibility with version 1 signatures and IDs. [Signing vector](M2_SIGNING_VECTOR.md)
 
 To avoid a circular dependence between the derived agreement and lot IDs, `termsHash` normalizes `lotId` to zero before hashing the EIP-712 `Terms` struct. Signers must sign that normalized typed data. Registration independently requires the supplied lot to equal `keccak256(abi.encode("LOT_V1", collateralChainId, collateralVault, agreementId))`. The fixed manager, vault, asset, adapter and fixture configuration are bound through the EIP-712 manager domain and immutable deployment, rather than repeated as fields in this local struct. This normalization is an implementation decision requiring client and security review before any integration.
 
@@ -104,7 +104,8 @@ All signatures below are conceptual. Exact ABI, type hashes and storage layouts 
 
 | Function | Caller and purpose |
 |---|---|
-| `register(terms, borrowerSignature, lenderSignature)` | Anyone submits two valid, deadline-bound EIP-712 authorizations. Consume borrower nonce once and record a Draft. |
+| `register(terms, borrowerSignature, lenderSignature)` | Anyone submits two valid, deadline-bound EIP-712 authorizations. Consume both role-specific nonces once and record a Draft. |
+| `invalidateBorrowerNonce(nonce)`, `invalidateLenderNonce(nonce)` | The caller invalidates its own unused nonce in the selected role. |
 | `stageLockIntent(operation, payload)` | Future authenticated ingress records the exact observed lock intent without granting credit. |
 | `submitFinalizedLock(attestation)` | Anyone submits independently verified finalized evidence, bound to the same operation and payload. |
 | `activate(agreementId)` | Anyone atomically verifies both facts, fresh valuation and lender commitment, then reserves the full signed cap. |
@@ -116,7 +117,7 @@ All signatures below are conceptual. Exact ABI, type hashes and storage layouts 
 | `markDefault(agreementId)` | Anyone records default at or after maturity plus grace if debt remains. Cure remains available. |
 | `agreement`, `debtAt`, `pendingOperation` | Read-only state and preview. Preview rounds consistently with state-changing accrual. |
 
-Terms bind version, chain and manager, both vault addresses and deployment chain IDs, borrower and lender, borrower nonce, consent deadline, collateral lot and amount, asset, market, debtor, adapter and policy, cap, maximum 50% LTV, 5% APR, draw deadline, maturity and grace. Verify both signers, unique nonce, valid time ordering, supported immutable module configuration, and the lender's separate vault commitment. Specify supported EOA and contract-wallet signatures before implementation. Signed terms cannot be edited by an administrator.
+Terms bind version, chain and manager, both vault addresses and deployment chain IDs, borrower and lender, independently chosen role nonces, consent deadline, collateral lot and amount, asset, market, debtor, adapter and policy, cap, maximum 50% LTV, 5% APR, draw deadline, maturity and grace. Verify both signers and role nonces, valid time ordering, supported immutable module configuration, and the lender's separate vault commitment. Contract-wallet signatures require future support. Signed terms cannot be edited by an administrator.
 
 Agreement ID is `keccak256(abi.encode("AGREEMENT_V1", baseChain, manager, borrower, lender, borrowerNonce, termsHash))`. Lot and reservation IDs use their existing vault formulas and deployment chain IDs. A draw ID binds manager, agreement and monotonically increasing risk epoch. Cross-chain operation IDs bind version, source chain, emitter, destination chain, receiver, kind, agreement, sequence and canonical payload hash. Evidence additionally binds canonical block hash, transaction hash and log index. Store operation ID and payload hash together. Exact duplicates are no-ops and conflicting reuse reverts. Consumed nonces, invalidated epochs and terminal agreements never reopen.
 

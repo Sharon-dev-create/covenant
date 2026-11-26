@@ -1,5 +1,7 @@
 # Financial model
 
+Version 2 local agreement authorization binds independent borrower and lender nonces. Each signer can invalidate an unused nonce in its own role without changing registered agreements or reservations. Both nonces are consumed atomically at registration. See the [signing vector](M2_SIGNING_VECTOR.md).
+
 Use integer wei and six-decimal USDC units. Normalize both feeds to a common precision. With positive ETH/USD and USDC/USD prices, compute `value = floor(wei * ethPrice * 10^6 / (10^18 * usdcPrice))` using overflow-safe full-precision math and conservative rounding. Validate round, price bounds, timestamp, configured heartbeat/freshness and sequencer availability/grace period where supported. Missing usable feeds block real-value origination. For the harness only, use fixed USDC/USD of 1 and controllable ETH/USD. A Base ETH/USD view is an economic proxy for Unichain ETH, subject to chain/custody risk and redemption basis.
 
 Initial illustrative parameters are 50% origination/draw LTV, 5% simple annual interest, zero commitment fee, one draw, and no automatic cross-chain liquidation. Set draw deadline and maturity separately, maturity later. Signed cap must fit current LTV at activation. At draw compute headroom from current valuation and subtract existing interest plus principal (zero before the first draw). Spend at most the minimum of headroom, undrawn contractual cap, reservation, market debt and purpose policy cap. Enforce minimum useful repayment and post-call risk improvement. USDC cash and debt are independent.

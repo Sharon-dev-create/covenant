@@ -79,6 +79,7 @@ contract CreditManagerTest {
             bytes32(uint256(1)),
             500e6,
             1,
+            10,
             11000,
             12000,
             13000,
@@ -130,6 +131,8 @@ contract CreditManagerTest {
         bytes memory wrongSignature = _signature(LENDER_KEY);
         vm.expectRevert(CreditManager.InvalidAuthorization.selector);
         manager.register(terms, wrongSignature, wrongSignature);
+        assert(!manager.usedBorrowerNonce(terms.borrower, terms.borrowerNonce));
+        assert(!manager.usedLenderNonce(terms.lender, terms.lenderNonce));
         terms.ltvBps = 5001;
         vm.expectRevert(CreditManager.InvalidTerms.selector);
         manager.register(terms, "", "");
@@ -196,7 +199,8 @@ contract CreditManagerTest {
     function testConflictingLotAndNonceCannotRegister() public {
         bytes32 id = _register();
         bytes32 firstLot = terms.lotId;
-        terms.nonce = 2;
+        terms.borrowerNonce = 2;
+        terms.lenderNonce = 11;
         terms.lotId = firstLot;
         vm.expectRevert(CreditManager.InvalidTerms.selector);
         manager.register(terms, "", "");
@@ -314,11 +318,121 @@ contract CreditManagerTest {
 
     function testExternalSigningVector() public view {
         assert(address(manager) == 0x5B0091f49210e7B2A57B03dfE1AB9D08289d9294);
-        assert(manager.TERMS_TYPEHASH() == 0x2aa632bea9262f2564f73d4a1beafef7b9def4caabf082875275d89bac0cb273);
-        assert(manager.termsHash(terms) == 0x76446e80b51521016838a427da1025b3df01637cb3bcd591c4887656287250a2);
-        assert(manager.digest(terms) == 0x110a451a1c39a1f969f34d71e2225ce3c248866e2c05aae47ada001878afce27);
-        assert(manager.agreementId(terms) == 0xbb2503b110a84823a069969e183a935145d6e95bdc115ba0967923a54d72e0d5);
-        assert(terms.lotId == 0x02348dc25c1ab4188cfb2ab6d28bd6a5e98b60c482f11a6c87eb2613945f917c);
+        assert(manager.TERMS_TYPEHASH() == 0x6784f511a0eeae862904d845b9ab1a33450659011f64eb82cba153afb8330b7e);
+        assert(manager.termsHash(terms) == 0xbb1a419a9fcdfb61d1d7f9abf47bbd0f65fa181130e8ef2c5b5a7f781385f869);
+        assert(manager.digest(terms) == 0xf40598a4bb03e32dcbf429b7f62ea8b07419291ac7953df04df7756a8a2a4816);
+        assert(manager.agreementId(terms) == 0x925075b49285f768cde89aa84ca36bfda08742824def1529a66ef0203c87890a);
+        assert(terms.lotId == 0x525ed2e15102a7abca4da5ddc72f898a6083baefbc64e5776a3934f42390c3e5);
+    }
+
+    function testIndependentNonceReuseAndFailureAtomicity() public {
+        _register();
+        assert(manager.usedBorrowerNonce(terms.borrower, 1) && manager.usedLenderNonce(terms.lender, 10));
+        terms.lenderNonce = 11;
+        _updateLot();
+        bytes memory borrowerSig = _signature(BORROWER_KEY);
+        bytes memory lenderSig = _signature(LENDER_KEY);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedLenderNonce(terms.lender, 11));
+        terms.borrowerNonce = 2;
+        terms.lenderNonce = 10;
+        _updateLot();
+        borrowerSig = _signature(BORROWER_KEY);
+        lenderSig = _signature(LENDER_KEY);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedBorrowerNonce(terms.borrower, 2));
+    }
+
+    function testRevocationOnlyAffectsCallerAndRole() public {
+        bytes memory borrowerSig = _signature(BORROWER_KEY);
+        bytes memory lenderSig = _signature(LENDER_KEY);
+        vm.prank(address(0xBEEF));
+        manager.invalidateBorrowerNonce(1);
+        vm.prank(address(0xBEEF));
+        manager.invalidateLenderNonce(10);
+        assert(!manager.usedBorrowerNonce(terms.borrower, 1));
+        assert(!manager.usedLenderNonce(terms.lender, 10));
+        vm.prank(terms.borrower);
+        manager.invalidateBorrowerNonce(1);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedLenderNonce(terms.lender, 10));
+        terms.borrowerNonce = 2;
+        _updateLot();
+        borrowerSig = _signature(BORROWER_KEY);
+        lenderSig = _signature(LENDER_KEY);
+        vm.prank(terms.lender);
+        manager.invalidateLenderNonce(10);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedBorrowerNonce(terms.borrower, 2));
+        vm.prank(terms.lender);
+        vm.expectRevert(CreditManager.InvalidState.selector);
+        manager.invalidateLenderNonce(10);
+    }
+
+    function testOutOfOrderAuthorizationsAndExistingReservation() public {
+        bytes memory firstBorrower = _signature(BORROWER_KEY);
+        bytes memory firstLender = _signature(LENDER_KEY);
+        CreditManager.Terms memory first = terms;
+        terms.borrowerNonce = 100;
+        terms.lenderNonce = 200;
+        _updateLot();
+        bytes32 second = _register();
+        collateral.set(second, terms.lotId, terms.borrower, terms.collateralAmount);
+        vm.prank(terms.lender);
+        vault.setCommitment(second, terms.cap);
+        manager.activate(second);
+        bytes32 otherCommitment = bytes32(uint256(999));
+        vm.prank(terms.lender);
+        vault.setCommitment(otherCommitment, 25e6);
+        vm.prank(terms.borrower);
+        manager.invalidateBorrowerNonce(500);
+        vm.prank(terms.lender);
+        manager.invalidateLenderNonce(500);
+        (, CreditManager.State state,) = manager.agreement(second);
+        assert(state == CreditManager.State.Active && vault.reserved(terms.lender) == terms.cap);
+        assert(vault.commitments(terms.lender, otherCommitment) == 25e6);
+        manager.register(first, firstBorrower, firstLender);
+        assert(manager.usedBorrowerNonce(terms.borrower, 1) && manager.usedLenderNonce(terms.lender, 10));
+    }
+
+    function testChangingEitherNonceInvalidatesSignatures() public {
+        bytes memory borrowerSig = _signature(BORROWER_KEY);
+        bytes memory lenderSig = _signature(LENDER_KEY);
+        terms.borrowerNonce = 2;
+        _updateLot();
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedBorrowerNonce(terms.borrower, 2) && !manager.usedLenderNonce(terms.lender, 10));
+        terms.borrowerNonce = 1;
+        terms.lenderNonce = 11;
+        _updateLot();
+        vm.expectRevert(CreditManager.InvalidAuthorization.selector);
+        manager.register(terms, borrowerSig, lenderSig);
+        assert(!manager.usedBorrowerNonce(terms.borrower, 1) && !manager.usedLenderNonce(terms.lender, 11));
+    }
+
+    function testSameAddressHasSeparateRoleNamespaces() public {
+        terms.lender = terms.borrower;
+        terms.lenderNonce = terms.borrowerNonce;
+        _updateLot();
+        bytes memory signature = _signature(BORROWER_KEY);
+        manager.register(terms, signature, signature);
+        assert(manager.usedBorrowerNonce(terms.borrower, 1) && manager.usedLenderNonce(terms.borrower, 1));
+        vm.prank(terms.borrower);
+        manager.invalidateBorrowerNonce(77);
+        assert(manager.usedBorrowerNonce(terms.borrower, 77) && !manager.usedLenderNonce(terms.borrower, 77));
+        vm.prank(terms.borrower);
+        manager.invalidateLenderNonce(77);
+        assert(manager.usedLenderNonce(terms.borrower, 77));
+    }
+
+    function _updateLot() private {
+        terms.lotId =
+            keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, manager.agreementId(terms)));
     }
 
     function _register() private returns (bytes32) {

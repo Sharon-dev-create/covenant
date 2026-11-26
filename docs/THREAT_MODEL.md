@@ -1,5 +1,7 @@
 # Threat model
 
+Borrower and lender signatures bind separate role-specific unordered nonces. Each signer may invalidate its own unused nonces, and failed registration cannot consume either. A signer with both roles has separate namespaces. Invalidation cannot revoke an already registered agreement or release liquidity. Version 2 signatures and IDs are incompatible with version 1. Signing clients must implement the [version 2 schema](M2_SIGNING_VECTOR.md).
+
 | Threat and trust assumption | Control and residual failure |
 |---|---|
 | Forged callbacks, replay or wrong route | Pin Omni proxy and originating Reactive contract, verify exact source/log domain and named operation, check state and payload hash. Test untrusted proxy, spoofed first argument, same sender with wrong payload and cross-agreement replay. |

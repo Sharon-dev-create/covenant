@@ -38,7 +38,8 @@ contract CreditManager {
         address debtor;
         bytes32 policy;
         uint256 cap;
-        uint256 nonce;
+        uint256 borrowerNonce;
+        uint256 lenderNonce;
         uint64 consentDeadline;
         uint64 drawDeadline;
         uint64 maturity;
@@ -53,7 +54,7 @@ contract CreditManager {
     }
 
     bytes32 public constant TERMS_TYPEHASH = keccak256(
-        "Terms(address borrower,address lender,address collateralVault,uint256 collateralChainId,bytes32 lotId,uint256 collateralAmount,address market,address debtor,bytes32 policy,uint256 cap,uint256 nonce,uint64 consentDeadline,uint64 drawDeadline,uint64 maturity,uint64 grace,uint16 ltvBps)"
+        "Terms(address borrower,address lender,address collateralVault,uint256 collateralChainId,bytes32 lotId,uint256 collateralAmount,address market,address debtor,bytes32 policy,uint256 cap,uint256 borrowerNonce,uint256 lenderNonce,uint64 consentDeadline,uint64 drawDeadline,uint64 maturity,uint64 grace,uint16 ltvBps)"
     );
     bytes32 private constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -66,13 +67,16 @@ contract CreditManager {
     address public immutable localOracle;
     address public immutable localAdapter;
     mapping(bytes32 => Agreement) private agreements;
-    mapping(address => mapping(uint256 => bool)) public usedNonce;
+    mapping(address => mapping(uint256 => bool)) public usedBorrowerNonce;
+    mapping(address => mapping(uint256 => bool)) public usedLenderNonce;
     mapping(bytes32 => bytes32) public lotAgreement;
     bool private entered;
 
     event AgreementRegistered(bytes32 indexed agreementId, address indexed borrower, address indexed lender);
     event AgreementActivated(bytes32 indexed agreementId, bytes32 indexed reservationId);
     event AgreementClosed(bytes32 indexed agreementId);
+    event BorrowerNonceInvalidated(address indexed borrower, uint256 indexed nonce);
+    event LenderNonceInvalidated(address indexed lender, uint256 indexed nonce);
 
     constructor(
         address vault_,
@@ -114,7 +118,7 @@ contract CreditManager {
                 address(this),
                 terms.borrower,
                 terms.lender,
-                terms.nonce,
+                terms.borrowerNonce,
                 termsHash(terms)
             )
         );
@@ -122,7 +126,7 @@ contract CreditManager {
 
     function digest(Terms calldata terms) public view returns (bytes32) {
         bytes32 domain =
-            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Covenant"), keccak256("1"), block.chainid, address(this)));
+            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Covenant"), keccak256("2"), block.chainid, address(this)));
         return keccak256(abi.encodePacked("\x19\x01", domain, termsHash(terms)));
     }
 
@@ -142,15 +146,28 @@ contract CreditManager {
             keccak256(abi.encode("LOT_V1", terms.collateralChainId, terms.collateralVault, agreementId(terms)));
         // The derived lot field is normalized to zero in termsHash to avoid a circular ID.
         if (terms.lotId != expectedLot) revert InvalidTerms();
-        if (usedNonce[terms.borrower][terms.nonce]) revert InvalidState();
+        if (usedBorrowerNonce[terms.borrower][terms.borrowerNonce] || usedLenderNonce[terms.lender][terms.lenderNonce]) revert InvalidState();
         bytes32 signed = digest(terms);
         if (_recover(signed, borrowerSignature) != terms.borrower || _recover(signed, lenderSignature) != terms.lender) revert InvalidAuthorization();
         id = agreementId(terms);
         if (agreements[id].state != State.Absent || lotAgreement[terms.lotId] != bytes32(0)) revert InvalidState();
-        usedNonce[terms.borrower][terms.nonce] = true;
+        usedBorrowerNonce[terms.borrower][terms.borrowerNonce] = true;
+        usedLenderNonce[terms.lender][terms.lenderNonce] = true;
         lotAgreement[terms.lotId] = id;
         agreements[id] = Agreement(terms, State.Draft, bytes32(0));
         emit AgreementRegistered(id, terms.borrower, terms.lender);
+    }
+
+    function invalidateBorrowerNonce(uint256 nonce) external {
+        if (usedBorrowerNonce[msg.sender][nonce]) revert InvalidState();
+        usedBorrowerNonce[msg.sender][nonce] = true;
+        emit BorrowerNonceInvalidated(msg.sender, nonce);
+    }
+
+    function invalidateLenderNonce(uint256 nonce) external {
+        if (usedLenderNonce[msg.sender][nonce]) revert InvalidState();
+        usedLenderNonce[msg.sender][nonce] = true;
+        emit LenderNonceInvalidated(msg.sender, nonce);
     }
 
     function activate(bytes32 id) external nonReentrant {
