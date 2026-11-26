@@ -78,3 +78,5 @@ A local optimized Foundry execution trace measured constructor execution gas of 
 ## M3-D implementation inventory
 
 Local code now adds Base `RiskSignalRegistry`, Lasna `FinancialReactive` and Base `FinancialCallbackReceiver`. Their test chain deployment order, exact subscription, separate reserves, frontend ABI/event fields and evidence procedure are in [FINANCIAL_CALLBACK_RUNBOOK.md](FINANCIAL_CALLBACK_RUNBOOK.md). Local constructor and callback trace gas is in [M3_D_CALLBACK_VERIFICATION.md](M3_D_CALLBACK_VERIFICATION.md); no actual deployment quote, L1 data fee, provider charge or funding sufficiency is established. These financial components do not reuse an M1-B probe's immutable receiver or payer reserves. M3-C source-vault lock of 0.001 test ETH remains permanently locked. Separate actual deployment and route activation authorization is required.
+
+M4 local preparation: see [deployment readiness](M4_DEPLOYMENT_READINESS.md) and [demonstration runbook](DEMO_EXECUTION_RUNBOOK.md). The prior statement that no deployment script exists is superseded by `script/DeployM4.s.sol`; it has not been run against public networks.

@@ -41,3 +41,7 @@ The local 3-of-4 attestation verifier and restricted simulated token, oracle, ma
 ## M3-D financial callback
 
 The registry, financial Reactive orchestrator and authenticated Base receiver are implemented for local simulation. M1-B live routes, real provider authentication and billing, source-finality policy, attestor governance, deployment funding and separate broadcast authorization remain open before an integrated testnet demonstration. No collateral release, liquidation or lender recovery is added.
+
+## M4-A local deployment preparation
+
+See [M4 deployment readiness](M4_DEPLOYMENT_READINESS.md) and [integrated verification](INTEGRATED_VERIFICATION.md). Live M1-B verification, operational approvals, fresh fee estimates and separate broadcast authorization remain gates.

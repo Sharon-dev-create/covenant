@@ -1,0 +1,162 @@
+{
+  "status": "template-not-deployed",
+  "revision": null,
+  "networks": {
+    "unichain": {
+      "chainId": 1301,
+      "rpc": "https://sepolia.unichain.org",
+      "collateralVault": null,
+      "binder": null,
+      "deploymentReceipt": null,
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1"
+    },
+    "base": {
+      "chainId": 84532,
+      "rpc": "https://sepolia.base.org",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "demoAsset": null,
+      "oracle": null,
+      "market": null,
+      "adapter": null,
+      "attestationVerifier": null,
+      "demoFactory": null,
+      "nestedFactory": null,
+      "manager": null,
+      "liquidityVault": null,
+      "signalRegistry": null,
+      "financialReceiver": null,
+      "deploymentReceipts": {}
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "rpc": "https://lasna-rpc.rnk.dev/",
+      "system": "0x8888888888888888888888888888888888888888",
+      "financialReactive": null,
+      "deploymentReceipt": null
+    }
+  },
+  "roles": {
+    "deployer": null,
+    "tokenAuthority": null,
+    "marketOperator": null,
+    "oracleOperator": null,
+    "reactiveOperator": null,
+    "governance": null,
+    "emergencyAuthority": null,
+    "attestors": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "lender": null,
+    "borrower": null,
+    "callbackFundingAuthority": null
+  },
+  "governance": {
+    "threshold": 3,
+    "validitySeconds": 1800,
+    "rotationDelaySeconds": 86400,
+    "approvedFinalityPolicy": null
+  },
+  "funding": {
+    "m1bTransport": {
+      "separate": true,
+      "ceilingLasnaLreact": null,
+      "ceilingBaseEth": null,
+      "ceilingUnichainEth": null
+    },
+    "financialReactiveReserveWei": null,
+    "financialReceiverReserveWei": null,
+    "demoLockedTestEthWei": "1000000000000000",
+    "financialCeilings": null
+  },
+  "financialRoute": {
+    "originChainId": 84532,
+    "destinationChainId": 84532,
+    "registry": null,
+    "manager": null,
+    "reactive": null,
+    "receiver": null,
+    "callbackGas": 1000000,
+    "subscription": null,
+    "callbackGasStatus": "provisional-not-approved"
+  },
+  "scenario": {
+    "mockLenderDeposit": "1000000000",
+    "mockCommitment": "300000000",
+    "mockMarketDebt": "800000000",
+    "mockDraw": "200000000",
+    "valuationMockUsdc": "1000000000"
+  },
+  "evidence": [],
+  "proposedSigner": {
+    "publicAddress": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "accountLabel": "covenant-testnet",
+    "identityAndRoleApproved": false,
+    "freshKeystoreMatch": "pending"
+  },
+  "approvals": {
+    "rolesAndCustody": false,
+    "finalityPolicy": false,
+    "governanceAndIncidentResponse": false,
+    "demoDependencies": false,
+    "callbackGasAndReserves": false,
+    "networkExpenditureCeilings": false,
+    "permanentCollateralLock": false,
+    "m1bLiveTransportEvidence": false,
+    "broadcastAuthorized": false
+  },
+  "approvalEvidence": {
+    "rolesAndCustody": null,
+    "finalityPolicy": null,
+    "governanceAndIncidentResponse": null,
+    "demoDependencies": null,
+    "callbackGasAndReserves": null,
+    "networkExpenditureCeilings": null,
+    "permanentCollateralLock": null,
+    "m1bLiveTransportEvidence": null,
+    "broadcastAuthorized": null
+  },
+  "m1bRouteEvidence": {
+    "unichainToBase": null,
+    "baseToUnichain": null,
+    "baseToBase": null
+  },
+  "lastReadOnlySnapshot": {
+    "observedAtUTC": "2026-11-26 22:53 UTC (approximate)",
+    "note": "Independent latest reads; not pinned to block; not authorization or future balance guarantee. Base primary returned HTTP 403; fallback used.",
+    "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "base": {
+      "rpc": "https://base-sepolia-rpc.publicnode.com",
+      "chainId": 84532,
+      "observedBlock": 64058454,
+      "balanceWei": "0",
+      "gasPriceWei": "6000000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "unichain": {
+      "chainId": 1301,
+      "observedBlock": 68881135,
+      "balanceWei": "10000000000000000",
+      "gasPriceWei": "1500000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "observedBlock": 9331099,
+      "balanceWei": "4725000000000000000",
+      "gasPriceWei": "100000000000",
+      "providerCodeBytes": 239,
+      "coefficientPer1000": 1000,
+      "extraGas": 100000,
+      "maxChargeGas": 50000
+    }
+  }
+}
