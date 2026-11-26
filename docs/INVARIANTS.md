@@ -25,3 +25,7 @@ For each lender or agreement, all buckets are integer and nonnegative. Across th
 ## M1-A verification
 
 For each lender, free plus reserved equals accounted cash belonging to that lender. Summed lender buckets equal vault totals, and the sum of active reservations equals total reserved. The stateful suite maintains independent per-lender cash and reservation records and tracks deposits, withdrawals, consumption, donations, ETH locks and forced ETH. Actual balances reconcile to managed balances plus unsolicited surplus. Terminal reservations carry zero active amount. Duplicate bindings, reservations, releases of reserves and consumption attempts fail. Token callbacks cannot enter a mutator during an external asset interaction. There is no ETH release entry point, so total released stays zero. The full credit and settlement invariants above remain integration acceptance criteria.
+
+### M2-E local reference-model scope
+
+`CreditFinancialInvariant` compares independent lender and agreement ledgers with the local vault and manager. Its collateral observations are mocks and do not prove source-chain collateral locking. Handler invocation counts include calls that return before a transition; see `M2_SECURITY_VERIFICATION.md` for the remaining verification work.

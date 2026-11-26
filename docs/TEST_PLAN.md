@@ -24,3 +24,7 @@ Regression gates require successful repayment/claim and rejected premature relea
 - Run all existing M1-A and M1-B tests unchanged as regression tests. Local mocks do not establish live transport or finality. Collateral release and real-value activation remain disabled.
 - Verify factory nonce prediction, immutable bindings, prefunded addresses, front-running and entire-transaction rollback on constructor or verification failure. Test fresh-factory recovery.
 - Enumerate 3-of-4 quorum intersections and test one versus two equivocators, cross-epoch non-equivocation, revocation, conflicting certificates and emergency pause. Label shared-key test committees simulated trusted attestations.
+
+### M2-E reference-model coverage
+
+The financial invariant handler and directed lifecycle test add independent lender cash and agreement debt accounting checks. Follow-up must measure successful state transitions separately from handler invocations, test real collateral-vault locking in the stateful model, and complete independent boundary and adversarial repayment-sequence testing. See `M2_SECURITY_VERIFICATION.md`.
