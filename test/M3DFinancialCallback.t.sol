@@ -92,6 +92,20 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         receiver = new FinancialCallbackReceiver(address(reactiveContract), address(manager), address(registry));
         vmd.chainId(FinancialTrigger.LASNA);
         reactiveContract.configure(address(registry), address(manager), address(receiver), 2_000_000);
+        assert(
+            SYSTEM.subscription()
+                == keccak256(
+                    abi.encode(
+                        address(reactiveContract),
+                        FinancialTrigger.BASE,
+                        address(registry),
+                        uint256(FinancialTrigger.TOPIC),
+                        FinancialTrigger.IGNORE,
+                        FinancialTrigger.IGNORE,
+                        uint256(uint160(address(manager)))
+                    )
+                )
+        );
         vmd.chainId(FinancialTrigger.BASE);
     }
 
@@ -236,6 +250,45 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         vmd.clearMockedCalls();
         vmd.chainId(FinancialTrigger.LASNA);
         vmd.warp(block.timestamp + 60);
+        reactiveContract.retry(trigger);
+        c = SYSTEM.lastRequest();
+        vmd.chainId(FinancialTrigger.BASE);
+        _deliver(c);
+        assert(manager.principal(id) == 200e6 && market.debt(borrower) == 600e6);
+    }
+
+    function testExistingPendingOperationSurvivesPausedFailure() public {
+        _setupIntegration();
+        (IOmniReactive.LogRecord memory e, bytes32 trigger) = _signal();
+        IOmniSystem.CallbackConfiguration memory c = _request(e);
+        bytes32 pending = manager.observeRisk(id);
+        vmd.prank(address(0xBEEF));
+        verifier.setPaused(true);
+        vmd.expectRevert(CreditManagerCore.InvalidCollateral.selector);
+        _deliver(c);
+        assert(manager.pendingDraw(id) == pending && manager.principal(id) == 0);
+        verifier.setPaused(false);
+        vmd.chainId(FinancialTrigger.LASNA);
+        vmd.warp(block.timestamp + 60);
+        reactiveContract.retry(trigger);
+        c = SYSTEM.lastRequest();
+        vmd.chainId(FinancialTrigger.BASE);
+        _deliver(c);
+        (, bytes32 executed) = receiver.records(trigger);
+        assert(executed == pending && manager.completedDraw(pending) && manager.principal(id) == 200e6);
+    }
+
+    function testStaleOracleRevertsThenRetrySucceeds() public {
+        _setupIntegration();
+        (IOmniReactive.LogRecord memory e, bytes32 trigger) = _signal();
+        IOmniSystem.CallbackConfiguration memory c = _request(e);
+        vmd.warp(block.timestamp + 1 hours + 1);
+        _attest();
+        vmd.expectRevert(CreditManagerCore.InvalidPrice.selector);
+        _deliver(c);
+        assert(manager.principal(id) == 0 && vault.reserved(lender) == 300e6);
+        oracle.update(1_000_000e6);
+        vmd.chainId(FinancialTrigger.LASNA);
         reactiveContract.retry(trigger);
         c = SYSTEM.lastRequest();
         vmd.chainId(FinancialTrigger.BASE);
@@ -409,6 +462,42 @@ contract M3DFinancialCallbackTest is M3CDemoTest {
         IOmniSystem.CallbackConfiguration memory c = _request(e);
         _deliver(c);
         assert(manager.principal(id) == 200e6);
+    }
+
+    function testRouteStopUnsubscribesAndCannotBeReconfigured() public {
+        _setupIntegration();
+        (IOmniReactive.LogRecord memory e, bytes32 trigger) = _signal();
+        _request(e);
+        vmd.chainId(FinancialTrigger.LASNA);
+        vmd.prank(address(99));
+        vmd.expectRevert(FinancialReactive.Unauthorized.selector);
+        reactiveContract.stop();
+        reactiveContract.stop();
+        assert(!reactiveContract.active() && SYSTEM.subscription() == bytes32(0));
+        vmd.prank(FinancialTrigger.SYSTEM);
+        vmd.expectRevert(FinancialReactive.InvalidLog.selector);
+        reactiveContract.react(e);
+        vmd.expectRevert(FinancialReactive.RetryUnavailable.selector);
+        reactiveContract.retry(trigger);
+        vmd.expectRevert(FinancialReactive.InvalidRoute.selector);
+        reactiveContract.configure(address(registry), address(manager), address(receiver), 2_000_000);
+    }
+
+    function testSystemRejectionDuringRetryPreservesAttempt() public {
+        _setupIntegration();
+        (IOmniReactive.LogRecord memory e, bytes32 trigger) = _signal();
+        _request(e);
+        vmd.chainId(FinancialTrigger.LASNA);
+        vmd.warp(block.timestamp + 60);
+        SYSTEM.setReject(true);
+        vmd.expectRevert(MockOmniSystem.RequestRejected.selector);
+        reactiveContract.retry(trigger);
+        (,,, uint8 attempts,) = reactiveContract.requests(trigger);
+        assert(attempts == 1);
+        SYSTEM.setReject(false);
+        reactiveContract.retry(trigger);
+        (,,, attempts,) = reactiveContract.requests(trigger);
+        assert(attempts == 2);
     }
 
     function testReactiveRejectsFakeEventsAndDeduplicates() public {
