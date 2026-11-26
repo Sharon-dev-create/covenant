@@ -11,6 +11,15 @@ For each lender or agreement, all buckets are integer and nonnegative. Across th
 - Interest and losses. Debt reductions require exact receipt or a future separately authorized write-off; no timeout reduces balances. Interest is independent of checkpoint frequency under fixed principal and carry. Settlement distributions cannot exceed actual escrow and proceeds. Every uncovered amount is tracked until recovery or recorded loss.
 - Cash isolation. Native gas funding is independent of ETH collateral and Base USDC. Callback billing code cannot draw on custodied ETH; use a distinct Unichain callback receiver forwarding validated intent to the vault. Restricted proxy payer and isolated native balance are also used on Base.
 
+## Proposed M2 integration invariants
+
+- A successful draw consumes exactly one reservation and books principal equal to verified market repayment and net vault debit. Any failure restores all local state and approvals.
+- Every repayment credit references a consumed reservation, derives its lender from that reservation and increases that lender's free balance and total cash only by the exact tokens pulled from the authorized payer in that transaction. Payment IDs are single-use.
+- `balance = totalFree + totalReserved + unsolicitedSurplus`. Interest and principal receivables are excluded from cash. Allocation of each actual payment is interest first, then principal, with any payoff carry rounded once.
+- Adapter and manager balances return to their pre-draw baselines and adapter/market allowances are zero after success. Payer allowances cannot be used through an arbitrary-payer manager entry point.
+- Financial activation requires both matching authenticated transport and a currently valid independently verified finality assertion. A duplicate cannot repeat an effect, a conflicting payload cannot replace a recorded fact, and a revoked epoch cannot authorize a new activation. No timeout constitutes proof or debt forgiveness.
+- Repayment above the accrued claim reverts before transfer. Manager vault binding and vault manager/consumer bindings are immutable and must match factory predictions before local deployment succeeds.
+
 ## M1-A verification
 
 For each lender, free plus reserved equals accounted cash belonging to that lender. Summed lender buckets equal vault totals, and the sum of active reservations equals total reserved. The stateful suite maintains independent per-lender cash and reservation records and tracks deposits, withdrawals, consumption, donations, ETH locks and forced ETH. Actual balances reconcile to managed balances plus unsolicited surplus. Terminal reservations carry zero active amount. Duplicate bindings, reservations, releases of reserves and consumption attempts fail. Token callbacks cannot enter a mutator during an external asset interaction. There is no ETH release entry point, so total released stays zero. The full credit and settlement invariants above remain integration acceptance criteria.

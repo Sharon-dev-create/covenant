@@ -8,7 +8,89 @@ Base Sepolia is the authoritative ledger for agreements, reservation state, prin
 
 The existing CollateralVault has an immutable binder, accepts one exact-amount lock per agreement, and emits `CollateralLocked(agreementId,positionId,borrower,amount)`. It does not emit a terms hash or operation ID, verify signatures or release ETH. Its lot ID includes the immutable deployment chain ID. The existing LiquidityVault has an immutable manager and consumer, lender-owned `setCommitment`, manager-only `reserve`, `cancel` and `consume`, and returns the unused reservation to free cash on consumption. Its reservation ID is similarly bound to the vault deployment chain ID. These deployments cannot be reconfigured to an independently deployed manager or consumer.
 
-Two integration gaps require a reviewed design before implementation. First, `consume` transfers an exact amount to the fixed consumer but does not call a repayment adapter or prove market repayment. The manager and consumer must coordinate atomically in one Base transaction, or a reviewed new vault interface is required. Second, the current vault has no way for a third-party payer or manager to credit a specific lender with repaid principal or interest. An ordinary deposit credits its caller, so sending tokens to the vault is surplus and cannot satisfy lender recovery. Define and test a narrowly authorized measured repayment-credit interface or a separate lender-owned repayment escrow before implementing the full lifecycle. Existing vaults stay unchanged in this specification milestone.
+The design below retains `consume` and proposes one measured repayment-credit extension in a new reviewed vault deployment. Existing vaults stay unchanged in this specification milestone. The finality verifier and its governance remain design decisions requiring approval.
+
+## Atomic draw and adapter boundary
+
+Deploy a new vault with both immutable `manager` and `consumer` set to the same CreditManager address. Resolve this constructor dependency with a reviewed deterministic deployment factory and precomputed addresses, and verify both immutable getters after deployment. Existing vault deployments cannot be rewired. Manager and vault must use the same supported, non-rebasing, honest-balance six-decimal asset. The manager is the sole consumer and never exposes arbitrary calls or token withdrawals.
+
+### Immutable deployment sequence
+
+The existing vault constructor is `LiquidityVault(IERC20 asset_, address manager_, address consumer_)`; the local extension preserves it. Proposed manager constructor is `CreditManager(address vault_, address asset_, address localCollateralVerifier_, address localOracle_, address localAdapter_)`. Each dependency is immutable and the local manager exposes no production cross-chain activation endpoint.
+
+A fresh one-shot factory provides the circular addresses without initialization. Predict CREATE addresses for its nonces 1 and 2 using canonical RLP derivation. CREATE the manager first with the predicted vault address, then CREATE the extended vault with the predicted manager as both manager and consumer. The factory must perform no earlier CREATE or CREATE2. The manager constructor validates nonzero parameters but cannot inspect the not-yet-created vault. The factory checks both addresses, runtime code, manager vault/asset/fixture getters, and vault asset/manager/consumer getters before returning. The sequence is one transaction with no user-controlled external calls between creations or checks. Any failure reverts both creations. Retry with a new factory address or fresh CREATE2 salt. Bind a deterministic factory deployment to a designated deployer and parameter commitment to limit address preemption. Pre-funded predicted addresses are surplus, never managed cash. No mutable setter or unrestricted initialization exists. Audit factory nonce assumptions, constructor behavior and front-running before implementation.
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Manager
+    participant Vault
+    participant Adapter
+    participant Market
+    Caller->>Manager: executePending(agreementId, epoch)
+    Manager->>Manager: validate terms, lock evidence, oracle, risk and amount
+    Manager->>Vault: consume(reservationId, exactAmount)
+    Vault->>Manager: transfer exactAmount, return unused reservation
+    Manager->>Adapter: approve exactAmount, call fixed repayment
+    Adapter->>Market: repay fixed asset and debtor
+    Market-->>Adapter: repayment result
+    Adapter-->>Manager: return, clear residuals
+    Manager->>Manager: verify spend, market effect, allowances and risk
+    Manager->>Manager: commit draw ID and equal principal
+```
+
+The manager holds a reentrancy guard across the entire transaction, marks the draw ID in progress before external calls, and validates the active agreement, pending epoch, deadline, authenticated and independently finalized lock, fresh collateral valuation, reservation owner and balance, signed cap and fixed market/asset/debtor/adapter. The maximum is the minimum of contractual, liquidity, policy, LTV and live market-debt limits. Round down using the market's documented rules. Select an exact spend before `consume`, with a minimum useful repayment. Existing `consume` closes the reservation, transfers that exact amount to the manager, and returns the unconsumed portion to lender free cash in the same call.
+
+Approve only the immutable reviewed adapter for the exact amount, using safe allowance-reset semantics. The adapter is callable only by the manager, approves only the fixed market for the exact amount, executes repayment for the signed debtor and asset, clears market approval and returns. Manager clears adapter approval and verifies both allowances are zero, its own and adapter balances equal their pre-draw baselines, the vault and manager exact deltas, the market debt reduction and actual applied repayment under the market's specified rounding, plus a strictly improved risk measure or full debt exit. Check return-data shape and success, but never accept adapter return values as sufficient evidence. The market and debt accounting source must be trusted, fixed, independently reviewed and protected against upgrade drift. A malicious adapter can lie or interact with a malicious market; measured balances and an untrusted market's self-reported debt do not prove genuine repayment. Pause and reject integrations whose code, accounting, price inputs or upgrade authority fail policy.
+
+Partial market repayment is supported by selecting a smaller exact spend up front. If the market applies less than the amount consumed, refunds tokens, returns malformed or inconsistent values, leaves any new residual or allowance, fails postflight or reenters, revert the entire transaction. This intentionally avoids booking a partial result after the reservation has already closed. The exact successful spend equals new principal, and unused reserved cash becomes free. Interest starts from the committed draw timestamp and accrues only thereafter. A pre-existing unrelated balance is excluded by baseline accounting and cannot be used to satisfy the checks. A fully reverting EVM call tree restores vault buckets, token transfers, approvals, market effects, in-progress ID and emitted logs. This guarantee requires every failure to bubble up as a revert, all economic effects to occur in the same Base transaction, and the token and market to obey EVM transactional semantics. Off-chain side effects or asynchronous settlement are outside this guarantee. After success, the terminal draw ID rejects all duplicates.
+
+## Measured lender repayment credit
+
+Proposed minimal extension to a new reviewed vault version:
+
+```solidity
+function creditRepayment(bytes32 reservationId, bytes32 paymentId, address payer, uint256 amount) external;
+event RepaymentCredited(bytes32 indexed reservationId, bytes32 indexed paymentId, address indexed lender, address payer, uint256 amount);
+```
+
+```mermaid
+sequenceDiagram
+    participant Payer
+    participant Manager
+    participant Vault
+    participant Token
+    Payer->>Manager: repay(agreementId, amount, nonce)
+    Manager->>Manager: accrue, validate claim and payment ID
+    Manager->>Vault: creditRepayment(reservationId, paymentId, caller, amount)
+    Vault->>Vault: derive lender and consume payment ID
+    Vault->>Token: transferFrom(payer, vault, exact amount)
+    Vault->>Vault: verify deltas and increase lender free cash
+    Vault-->>Manager: success
+    Manager->>Manager: reduce interest then principal
+```
+
+Only the immutable manager calls this function, guarded by the vault's existing non-reentrancy lock. The vault derives the lender from its stored reservation. Require `Consumed`, nonzero payment ID, nonzero payer and amount, and a globally unused payment ID. The reservation's retained agreement and lender bind the credit to the original facility. No caller supplies a lender or destination. Mark the payment ID consumed before external interaction, pull exactly `amount` from `payer` with `transferFrom`, and verify both payer debit and vault receipt exactly equal `amount`; on any failure revert the ID and all balances. Increase only that lender's `free` and `totalFree` by the measured receipt, emit the event, and leave `reserved` unchanged. Never use pre-existing token surplus as evidence of receipt. Existing withdrawals remain lender-owned.
+
+Manager `repay(bytes32 agreementId,uint256 amount,uint256 paymentNonce)` accrues first, derives a domain-separated payment ID from manager, chain, agreement, payer and nonce, rejects reused IDs, and requires `0 < amount <= current payoff quote`. Overpayment reverts before token transfer. It calls the vault with `payer = msg.sender`, then reduces interest first and principal second by exactly the verified amount, including the final carry rounding unit when fully paid. Any failed call or accounting postcondition rolls back accrual, transfer, lender credit and IDs. The payer approves the vault for the exact amount. Local scope has no relayer flow. A future relayer path requires a payer signature binding agreement, amount, nonce and deadline. No arbitrary-payer path can exploit an old allowance. A fresh payment uses a fresh nonce.
+
+This extension prevents unbacked free cash and lender selection by the manager. It still trusts the immutable manager to authorize a debit from the payer and assign the repayment to a consumed agreement. Code review and payer-bound entry points are required to prevent misuse of token allowances. Token behavior outside the supported asset policy, including malicious `balanceOf`, remains a trust assumption.
+
+Let `F`, `R`, `S` and `B` denote total free, reserved, unsolicited surplus and actual vault token balance. Before and after each successful transition `B = F + R + S`. Let `P` be outstanding principal and `I` payable accrued interest. A payment receipt `x ≤ P + I` changes `B' = B + x`, `F' = F + x`, `R' = R`, `S' = S`, `I' = I - min(x,I)` and `P' = P - max(0,x-I)`. Cash and receivables are separate. A draw of `d` from reservation `r` changes `B' = B-d`, `R' = R-r`, `F' = F+r-d`, and `P' = P+d` after verified market repayment.
+
+For example, a lender begins with 600 USDC free and reserves 500, leaving 100 free and 500 reserved. A verified 200 draw leaves 400 free, zero reserved, 200 principal and 400 vault cash. After 5 USDC interest accrues, a 75 USDC payment credits 75 free, applies 5 interest and 70 principal, and leaves 130 principal and 475 vault cash. A later 130 USDC payment, assuming no further accrual or carry, leaves 605 free, 605 cash and zero principal and interest. A 150 USDC payment while 130 remains reverts without transferring funds. One directly donated USDC remains surplus and does not reduce debt or increase free cash.
+
+## Proposed finalized lock attestation
+
+This is a trusted attestation system for review, not trustless consensus verification. Candidate configuration is 3-of-4 distinct signer keys. Two quorums intersect in at least two signers, so with at most one Byzantine signer and honest non-equivocation for each operation across epochs, conflicting certificates cannot both form. Two equivocating signers can support conflicting quorums, and three compromised signers can certify false source data. Two unavailable signers halt quorum liveness. Independence of operators, keys and nodes is essential; if unavailable for the hackathon, classify the committee as simulated trusted testnet attestation. Reactive remains the autonomous execution mechanism. The finality policy, key custody and operational independence remain unresolved.
+
+Sign an EIP-712 `CollateralLockAttestation` containing schema version, source chain and vault deployment, destination chain and manager/verifier address, agreement ID, lot ID, borrower, amount, canonical event topic and data hash, block number, block hash, transaction hash, log index, transport operation ID and payload hash, finality policy version, signer-set epoch, issue time, expiry and attestation nonce. The EIP-712 domain binds chain ID, verifier and protocol version. Derive the existing vault event's exact fields from a canonical receipt. Bind the immutable terms hash in the signed attestation and require it to match manager-registered terms, while acknowledging the existing event itself contains no terms hash. A quorum assertion about that binding is an additional trust assumption and requires a reviewed bridge from the signed draft to the immutable binder. Record event identity and operation-to-payload mappings independently to prevent the same lot or log being used across agreements.
+
+Each signer must independently verify the receipt and log against a canonical Unichain block and an independently operated rollup/L1 view whose source block has reached the agreed L1-finalized derivation status. Define exactly which RPC/node software, L1 finality criterion, rollup derivation checks, maximum observation age and reorg response apply before activation. An RPC `finalized` tag alone is an operator observation, not an on-chain proof. The verifier enforces unique authorized signers, 3-of-4 threshold, canonical signature encoding, nonexpired statement, epoch and policy, exact agreement/lot/event binding, and matching authenticated transport intent. Conflicting payloads for the same operation or lot are rejected and halt that agreement for manual investigation, never overwritten. If a conflict is discovered after activation, halt new risk and preserve the debt and evidence; do not pretend activation can be rolled back across chains.
+
+An approved governance process must define epoch rotation, timelock, on-chain activation, emergency revocation and independently auditable signer membership. Reject signatures from revoked or retired epochs for new activations, including staged but unapplied statements. Already applied attestations and debts remain recorded. Re-attest pending operations under the new epoch after revocation. A rotation or expiry must not release collateral, cancel debt or free a reserved claim automatically. The issuer of an attestation cannot revoke an already executed transaction. Recovery from finality failure or key compromise needs an incident plan and remains unresolved.
+
+Reactive Omni authenticates a callback through its proxy and injected requesting reactive-contract identity, and its CometBFT finality concerns the Reactive chain. The reviewed documentation does not establish that an origin event received by a reactive contract is independently proven finalized on Unichain, or guarantee delivery, ordering or retry. Both authenticated transport and the separate approved finalized-lock assertion are therefore necessary for financial activation in this proposal. The M1-B live routes have not been verified. [Omni overview](https://dev.reactive.network/) · [Callback authentication](https://dev.reactive.network/callback-contracts)
 
 ## Proposed CreditManager interface
 
@@ -53,13 +135,13 @@ Normalize prices to the same scale. For ETH wei `W`, ETH/USD price `E` and USDC/
 
 Let `limit = floor(valueUSDC * min(signedLtvBps,5000) / 10000)`. Activation requires cap ≤ limit. On draw, `headroom = max(0, limit - principal - accruedInterest)` and spend is bounded by headroom, remaining contractual cap, reserved cash, current market debt and purpose-policy cap. Require a useful positive repayment and verified risk improvement or complete debt exit, with explicit tested market rounding tolerance.
 
-For each accrual interval use denominator `D = 10000 * 365 days`, numerator `principal * 500 * elapsed + carry`, interest increment `floor(numerator / D)`, and `carry = numerator % D`. Accrue before each principal change with full-precision arithmetic. Do not compound accrued interest. On final payoff, charge one USDC base unit if carry is nonzero and clear it. Define the full-payoff quote and actual receipt in the same transaction to avoid leaving rounding dust. Repayments are capped at the claim and allocate to interest before principal. Any excess stays with the payer. Interest continues through default until a separately approved settlement policy says otherwise.
+For each accrual interval use denominator `D = 10000 * 365 days`, numerator `principal * 500 * elapsed + carry`, interest increment `floor(numerator / D)`, and `carry = numerator % D`. Accrue before each principal change with full-precision arithmetic. Do not compound accrued interest. On final payoff, charge one USDC base unit if carry is nonzero and clear it. Define the full-payoff quote and actual receipt in the same transaction to avoid leaving rounding dust. Reject payments above the claim before transfer and allocate valid payments to interest before principal. Interest continues through default until a separately approved settlement policy says otherwise.
 
 Managed vault cash equals free plus reserved. Reservation creates no principal. Principal equals cumulative verified draw minus measured principal repayment, recovery and approved write-off. Recovery and write-off are disabled in this scope. Interest and principal are receivables until actual payment is credited to the correct lender. Unsolicited token and ETH transfers remain segregated surplus. Closing a funded agreement requires zero principal and interest, and closing an unused agreement requires zero reservation.
 
 ## Authentication and dependencies
 
-M1-B live callback delivery, injected sender, ordering, redelivery and finality behavior remain unverified. Before any live activation, validate the exact proxy and reactive sender and require an independently authenticated finalized source assertion. A candidate is a reviewed 3-of-5 independent attestation quorum using independently operated rollup and Ethereum nodes, EIP-712 domain binding, signer epochs, rotation and replay protection. It introduces explicit quorum and node trust. It is a proposal, not an implemented or approved finality verifier. A raw RPC response or Reactive callback alone cannot satisfy this gate. Duplicate, delayed, missing, contradictory and reorged evidence must fail closed.
+M1-B live callback delivery, injected sender, ordering, redelivery and finality behavior remain unverified. Before any live activation, validate the exact proxy and reactive sender and require an independently authenticated finalized source assertion. The candidate 3-of-4 quorum introduces explicit signer and node trust and is not an approved finality verifier. A raw RPC response or Reactive callback alone cannot satisfy this gate. Duplicate, delayed, missing, contradictory and reorged evidence must fail closed.
 
 An approved oracle needs feed addresses, decimals, heartbeat, sequencer handling, USDC basis policy and manipulation bounds. The market adapter needs a verified asset-compatible market, precise debt and health semantics, bounded approvals and atomic rollback. Aave's observed Base Sepolia test USDC differs from Circle test USDC. A deterministic market and oracle fixture can exercise local mechanics while clearly labelled as such. Real lender recovery needs an independently specified and verified sale or prefunded settlement path and explicit shortfall accounting. There is no liquidation or ETH release in this preparation.
 
@@ -81,3 +163,11 @@ An approved oracle needs feed addresses, decimals, heartbeat, sequencer handling
 6. Verify the actual oracle and compatible market or conversion route. Prove real lender repayment credit and separately solve cross-chain recovery before any real-value scope is considered.
 
 Acceptance requires passing unit, fuzz, invariant and adversarial suites with the specified accounting properties, an auditable fixture lifecycle, no arbitrary asset destination, and clear evidence that financial activation and collateral release remain disabled. Live transport, oracle, finality and recovery evidence are separate release gates.
+
+## Frozen local implementation and decision register
+
+Upon explicit authorization, the local scope comprises CreditManager, a new vault version with only the repayment-credit extension, immutable deployment factory, local collateral verification and oracle fixtures, deterministic market/adapter fixtures, agreement registration and reservation, one exact atomic draw, principal and simple interest, partial/full repayment, unused cancellation/expiry, default and post-default cure, plus unit, fuzz, invariant and adversarial tests. Live financial activation, production feeds and markets, collateral release, liquidation and real-value origination are excluded. Reactive continues as the future autonomous trigger; local fixture tests do not claim live delivery.
+
+The vault enforces manager-only credit, a consumed reservation, lender derivation from the retained reservation record, unique payment ID and exact payer debit/vault receipt before crediting that lender. Existing `_close` sets amount to zero but retains lender and agreement. The manager enforces caller-as-payer, agreement/reservation correspondence, accrued debt bounds, interest-first allocation and repayment nonce. A dishonest or flawed manager can misuse a standing vault allowance or select another consumed reservation despite the vault's correct lender derivation. Security therefore depends on immutable reviewed manager code, exact entry-point authorization and atomic postconditions; no unrestricted admin may alter the binding. Failed calls revert both contracts and token changes.
+
+Decisions accepted in principle are existing `consume`, manager-as-consumer, exact atomic repayment, measured lender credit, interest-first allocation and overpayment rejection. Outstanding live decisions are independently operated signer membership and 3-of-4 approval, source finality policy, epoch rotation/revocation and emergency authority, live Omni verification, asset/oracle and market/adapter suitability, and lender recovery. The local fixture uses simulated trusted assertions; it does not imply an independent committee is available.

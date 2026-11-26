@@ -24,6 +24,14 @@ The immutable manager cannot withdraw lender cash or choose a transfer destinati
 
 The vault requires a conventional fixed-supply-behavior ERC-20 reporting honest balances, and it checks both sides of each transfer. Direct token and forced ETH surplus are observable and excluded from withdrawable balances. There is no surplus sweep. The contribution of the fixed consumer is tested as an asset transfer. Production token, adapter, proxy, finalized proof and settlement assumptions remain open.
 
+## Proposed M2 integration threats
+
+The fixed CreditManager-as-consumer arrangement lets `consume` remain unchanged, but a malicious or upgradeable adapter or lending market can fabricate outcomes. Approve fixed reviewed code and market accounting, validate actual token deltas and independent market state, clear exact allowances, and revert on mismatch. Atomic rollback depends on synchronous EVM execution and propagated reverts. Reentrancy guards cover the full manager transaction and vault credit entry point.
+
+The repayment-credit extension derives the lender from a consumed reservation and measures an in-call payer transfer. It cannot mint accounting credit from donated surplus. The immutable manager must bind the payer to the caller or a signed mandate, preventing misuse of standing vault allowances. Misbehaving tokens, compromised manager logic, or mutable market implementations remain explicit trust risks.
+
+A candidate 3-of-4 signer quorum has a minimum intersection of two. With at most one Byzantine signer and honest cross-epoch non-equivocation, conflicting certificates cannot both form. Three compromised signers can forge a false assertion; two unavailable signers prevent quorum. Without independent operators, the committee is simulated trusted testnet attestation. Rotation, revocation and incidents require the policy in [M2 credit engine](M2_CREDIT_ENGINE.md). Reactive's own finality does not independently verify Unichain receipts.
+
 ## M1-B transport probe boundaries
 
 Each receiver pins the documented destination proxy, the exact expected Lasna reactive contract and one route's origin identity. Current Omni docs guarantee that the proxy injects the requesting reactive contract into the first payload argument, but the live guarantee still depends on the deployed proxy implementation, its signer/upgrade authority and the System. A provider implementation change or signer compromise invalidates that assumption. The subscription filter puts the route in topic2 because topic1 is the operation ID; an incorrect filter silently receives no logs. Probe contracts expose provider-only `pay(uint256)`, a public `coverDebt()` and `receive()`, so they can settle fees without granting a third party payment rights. Any debt still blocks execution, and a failed callback is charged.
