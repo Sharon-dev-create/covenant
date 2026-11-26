@@ -40,13 +40,15 @@ contract CreditManager {
     error InvalidPrice();
     error Reentrant();
     error InvalidExecution();
+    error InvalidRepayment();
 
     enum State {
         Absent,
         Draft,
         Active,
         Closed,
-        Drawn
+        Drawn,
+        Defaulted
     }
 
     struct Terms {
@@ -84,6 +86,8 @@ contract CreditManager {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     uint256 private constant HALF_ORDER = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
     uint256 public constant MAX_PRICE_AGE = 1 hours;
+    uint256 public constant APR_BPS = 500;
+    uint256 public constant INTEREST_DENOMINATOR = 630720000;
 
     address public immutable vault;
     address public immutable asset;
@@ -99,6 +103,12 @@ contract CreditManager {
     mapping(bytes32 => bool) public completedDraw;
     mapping(bytes32 => uint256) public principal;
     mapping(bytes32 => uint256) public drawTimestamp;
+    mapping(bytes32 => uint256) public lastAccrued;
+    mapping(bytes32 => uint256) public accruedInterest;
+    mapping(bytes32 => uint256) public interestRemainder;
+    mapping(bytes32 => uint256) public totalInterestAccrued;
+    mapping(bytes32 => uint256) public totalInterestPaid;
+    mapping(bytes32 => uint256) public totalPrincipalPaid;
     bool private entered;
 
     event AgreementRegistered(bytes32 indexed agreementId, address indexed borrower, address indexed lender);
@@ -109,6 +119,15 @@ contract CreditManager {
     event RiskObserved(bytes32 indexed agreementId, bytes32 indexed operationId, uint64 epoch);
     event RiskCleared(bytes32 indexed agreementId, bytes32 indexed operationId);
     event DrawExecuted(bytes32 indexed agreementId, bytes32 indexed operationId, uint256 principal, uint256 timestamp);
+    event InterestAccrued(bytes32 indexed agreementId, uint256 amount, uint256 remainder);
+    event DebtRepaid(
+        bytes32 indexed agreementId,
+        bytes32 indexed paymentId,
+        address indexed payer,
+        uint256 interestPaid,
+        uint256 principalPaid
+    );
+    event AgreementDefaulted(bytes32 indexed agreementId);
 
     constructor(
         address vault_,
@@ -247,6 +266,7 @@ contract CreditManager {
         _repayMarket(t, a.reservationId, amount);
         principal[id] = amount;
         drawTimestamp[id] = block.timestamp;
+        lastAccrued[id] = block.timestamp;
         completedDraw[operationId] = true;
         delete pendingDraw[id];
         a.state = State.Drawn;
@@ -320,6 +340,96 @@ contract CreditManager {
             revert InvalidExecution();
         }
         if (IExecutionToken(asset).allowance(address(this), spender) != amount) revert InvalidExecution();
+    }
+
+    /// @notice Fractional carry uses denominator 630720000, exactly 10000 * 365 days / 500.
+    function debtPreview(bytes32 id)
+        public
+        view
+        returns (uint256 outstandingPrincipal, uint256 interest, uint256 totalPayable)
+    {
+        outstandingPrincipal = principal[id];
+        uint256 remainder;
+        (interest, remainder) = _previewInterest(id);
+        totalPayable = outstandingPrincipal + interest + (remainder == 0 ? 0 : 1);
+    }
+
+    function accrueInterest(bytes32 id) external nonReentrant {
+        State state = agreements[id].state;
+        if (state != State.Drawn && state != State.Defaulted) revert InvalidState();
+        _accrue(id);
+    }
+
+    function repay(bytes32 id, uint256 amount, uint256 paymentNonce) external nonReentrant {
+        Agreement storage a = agreements[id];
+        if (a.state != State.Drawn && a.state != State.Defaulted) revert InvalidState();
+        if (amount == 0) revert InvalidRepayment();
+        bytes32 paymentId =
+            keccak256(abi.encode("REPAYMENT_V1", block.chainid, address(this), id, msg.sender, paymentNonce));
+        if (CreditLiquidityVault(vault).repaymentUsed(paymentId)) revert InvalidRepayment();
+        _accrue(id);
+        uint256 p = principal[id];
+        uint256 interest = accruedInterest[id];
+        uint256 remainder = interestRemainder[id];
+        uint256 payableTotal = p + interest + (remainder == 0 ? 0 : 1);
+        if (amount > payableTotal) revert InvalidRepayment();
+        if (amount == payableTotal && remainder != 0) {
+            interest += 1;
+            totalInterestAccrued[id] += 1;
+            interestRemainder[id] = 0;
+        }
+        uint256 interestPaid = amount < interest ? amount : interest;
+        uint256 principalPaid = amount - interestPaid;
+        accruedInterest[id] = interest - interestPaid;
+        principal[id] = p - principalPaid;
+        totalInterestPaid[id] += interestPaid;
+        totalPrincipalPaid[id] += principalPaid;
+        // If principal is extinguished one unit short of payoff, crystallize the carry as interest.
+        if (principal[id] == 0 && interestRemainder[id] != 0) {
+            accruedInterest[id] += 1;
+            totalInterestAccrued[id] += 1;
+            interestRemainder[id] = 0;
+        }
+        if (principal[id] == 0 && accruedInterest[id] == 0) a.state = State.Closed;
+        CreditLiquidityVault(vault).creditRepayment(a.reservationId, paymentId, msg.sender, amount);
+        emit DebtRepaid(id, paymentId, msg.sender, interestPaid, principalPaid);
+        if (a.state == State.Closed) emit AgreementClosed(id);
+    }
+
+    function markDefault(bytes32 id) external nonReentrant {
+        Agreement storage a = agreements[id];
+        if (a.state != State.Drawn || block.timestamp < uint256(a.terms.maturity) + uint256(a.terms.grace)) {
+            revert InvalidState();
+        }
+        _accrue(id);
+        if (principal[id] == 0 && accruedInterest[id] == 0) revert InvalidState();
+        a.state = State.Defaulted;
+        emit AgreementDefaulted(id);
+    }
+
+    function _accrue(bytes32 id) private {
+        (uint256 interest, uint256 remainder) = _previewInterest(id);
+        uint256 delta = interest - accruedInterest[id];
+        accruedInterest[id] = interest;
+        interestRemainder[id] = remainder;
+        totalInterestAccrued[id] += delta;
+        lastAccrued[id] = block.timestamp;
+        emit InterestAccrued(id, delta, remainder);
+    }
+
+    function _previewInterest(bytes32 id) private view returns (uint256 interest, uint256 remainder) {
+        interest = accruedInterest[id];
+        remainder = interestRemainder[id];
+        uint256 p = principal[id];
+        if (p == 0) return (interest, remainder);
+        uint256 elapsed = block.timestamp - lastAccrued[id];
+        uint256 denominator = INTEREST_DENOMINATOR;
+        // Decompose both operands to avoid overflowing an intermediate product when the quotient fits.
+        uint256 delta = (p / denominator) * elapsed + (p % denominator) * (elapsed / denominator);
+        uint256 tail = (p % denominator) * (elapsed % denominator) + remainder;
+        delta += tail / denominator;
+        remainder = tail % denominator;
+        interest += delta;
     }
 
     function activate(bytes32 id) external nonReentrant {

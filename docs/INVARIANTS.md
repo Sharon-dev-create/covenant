@@ -1,5 +1,7 @@
 # Invariants
 
+M2-D additionally records cumulative interest accrued, interest paid and principal paid per agreement. After a checkpoint `principal = draw - totalPrincipalPaid` and `accruedInterest = totalInterestAccrued - totalInterestPaid`. Fractional carry is separately tracked until crystallized. Vault cash increases only by exact verified repayments and unsolicited surplus remains separate. Default preserves the claim; financial settlement does not release ETH.
+
 For each lender or agreement, all buckets are integer and nonnegative. Across the Base vault, measured managed USDC balance equals sum(free + reserved); unsolicited token surplus is segregated and cannot be counted twice. Adapter balances and market allowances return to baseline after every successful draw. No external callback can interleave state mutation during a draw or repayment.
 
 - Reservation conservation. Summed per-agreement reserved equals summed per-lender reserved. Each reservation has one corresponding active agreement. Only free funds can be withdrawn, with cash delta exactly equal to actual withdrawal.

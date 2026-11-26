@@ -1,5 +1,7 @@
 # Test plan
 
+M2-D local tests cover exact-year interest, repeated checkpoints, carry, one-unit-short payoff, interest-first partial payments, default and cure, failed/malformed/fee transfers, duplicate payment IDs, payer isolation, multiple lenders and borrowers, and fuzzed equivalence of split and continuous accrual. Fixtures do not verify live market or finality behavior.
+
 | Layer | Cases and acceptance |
 |---|---|
 | Unit | Nonce/domain checks, lender deposit and withdraw, exact reservation, stale/future/negative prices and grace checks, price deterioration and insufficient LTV, one-draw limits, purpose mismatch, adapter spend/return, interest carry, partial/full cure, commitment expiry and maturity default. Assert exact six-decimal balances and events. |

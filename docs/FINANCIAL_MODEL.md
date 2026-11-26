@@ -1,5 +1,9 @@
 # Financial model
 
+M2-D local implementation uses the immutable manager's fixed 5% APR, bound to the signed manager address. For principal `P`, elapsed seconds `t`, and reduced carry `c`, compute `n = P*t+c`, whole increment `floor(n/630720000)` and carry `n mod 630720000`. The implementation decomposes the product to avoid intermediate overflow when the result fits. Preview reports whole interest separately and adds one unit to the total payoff for nonzero carry. A partial repayment that extinguishes principal one unit short of payoff converts that carry to one unit of outstanding interest. No further interest accrues after principal reaches zero. Full payoff and all transfers occur atomically.
+
+Example: 200 USDC outstanding for one year accrues 10 USDC. Paying 5 credits the lender 5, leaves principal 200 and interest 5. Paying another 55 applies 5 to interest and 50 to principal, leaving principal 150. Cash grows by 60 in total; the remaining 150 is a receivable.
+
 Version 2 local agreement authorization binds independent borrower and lender nonces. Each signer can invalidate an unused nonce in its own role without changing registered agreements or reservations. Both nonces are consumed atomically at registration. See the [signing vector](M2_SIGNING_VECTOR.md).
 
 Use integer wei and six-decimal USDC units. Normalize both feeds to a common precision. With positive ETH/USD and USDC/USD prices, compute `value = floor(wei * ethPrice * 10^6 / (10^18 * usdcPrice))` using overflow-safe full-precision math and conservative rounding. Validate round, price bounds, timestamp, configured heartbeat/freshness and sequencer availability/grace period where supported. Missing usable feeds block real-value origination. For the harness only, use fixed USDC/USD of 1 and controllable ETH/USD. A Base ETH/USD view is an economic proxy for Unichain ETH, subject to chain/custody risk and redemption basis.
