@@ -33,3 +33,11 @@ Reuse, rather than duplicate, the local `CreditManager` registration/activation/
 ## M3-B shared engine
 
 The local shared-core and restricted Base Sepolia wrappers and factory are implemented for local testing. No testnet transaction has been broadcast. M3-C finality/attestation and M3-D financial Reactive callbacks remain future work; signer governance, live M1-B route verification, mock dependencies, funding and separate deployment authorization remain open.
+
+## M3-C demo dependencies
+
+The local 3-of-4 attestation verifier and restricted simulated token, oracle, market, adapter and demo factory have been implemented for local verification. Deployment requires approved attestor/governance custody and an agreed source-finality procedure. M1-B live transport and M3-D financial callback integration are still outstanding. No live deployment, collateral release or real-value origination is authorized by this milestone.
+
+## M3-D financial callback
+
+The registry, financial Reactive orchestrator and authenticated Base receiver are implemented for local simulation. M1-B live routes, real provider authentication and billing, source-finality policy, attestor governance, deployment funding and separate broadcast authorization remain open before an integrated testnet demonstration. No collateral release, liquidation or lender recovery is added.

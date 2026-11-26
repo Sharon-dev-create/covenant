@@ -92,3 +92,11 @@ For each attempt record source chain/registry, agreement, generation, source blo
 ## M3-B boundary
 
 The shared core and chain-restricted testnet manager/factory now exist locally. This callback ABI, risk registry, orchestrator, ingress and attestation verifier remain specifications only; no callback authorization or source finality guarantee has been implemented by M3-B.
+
+## M3-C attestation implementation status
+
+The collateral verifier described above now exists as `CollateralAttestationVerifier`, with epoch-bound 3-of-4 ECDSA, thirty-minute acceptance validity, 24-hour rotation and pause. Rotation invalidates old-epoch evidence until renewed. Same-event, same-fact evidence can be renewed with a new expiry or epoch; conflicting facts persistently freeze that agreement. `verify` returns false at expiry, on pause, conflict, epoch mismatch or wrong binding. The financial Reactive callback schema in this document is still proposed and unimplemented; a successful attestation remains a trusted signer assertion, not proof of Reactive delivery or source finality.
+
+## M3-D local implementation status
+
+The V1 financial trigger and domain-separated `COVENANT_RISK_TRIGGER_V1` ID, exact indexed signal subscription, dual callback authentication and disposition outcomes are implemented locally. The source registry adds permissionless `resignal(id)` after a 60-second delay for an unchanged eligible generation if an initial system request reverted before a request was stored. Reactive logs re-observations and does not request a duplicate; an existing request is re-requested only by the operator, at most three total attempts. Once all attempts are exhausted there is no in-contract reset. The earlier discussion of these components as proposed is historical; this update does not imply live deployment, actual provider authentication or collateral finality verification.

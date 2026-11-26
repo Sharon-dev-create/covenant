@@ -47,3 +47,11 @@ Expected values are calculated independently from the rational accrual formula. 
 ## M3-B verification scope
 
 Retain all M2 regression and invariant tests and run the same core scenario on simulated 31337 and 84532 deployments. Test chain guards, asset decimals and immutable bindings, exact and above-limit agreements, successful/failed draw accounting, non-replenishment on repayment/default/cancellation, cross-chain and cross-manager signatures, and the factory creation rollback pattern. The injection harness tests the creation pattern, not a failure switch in the production factory. These tests do not verify live Base Sepolia or Reactive transport.
+
+## M3-C local tests
+
+Run `M3CDemoTest` for threshold and signer uniqueness, binding and domain failures, expiry/renewal, conflict freeze, paused activation/draw with repayment available, delayed signer rotation, mock asset restriction and operator controls, recovered/stale positions, injected market-failure rollback and the complete direct-call demonstration. These tests use simulated chain IDs and synthetic test keys; they do not verify live transport or source finality. Preserve all prior financial regressions and the existing expanded invariant campaign.
+
+## M3-D local integration
+
+`M3DFinancialCallbackTest` uses M3-C demonstration dependencies and a mocked Omni system/proxy. It tests the authenticated end-to-end draw and later repayment; wrong caller/injected sender/encoding; duplicate source and callback, stale/unknown/expired/settled/recovered signals, competing direct execution, emergency pause, adapter failure and retry, a rejected initial system request followed by a same-generation re-signal, and bounded operator retries. Additional direct adapter failure checks cover transfer, allowance, cleanup and incorrect repayment reporting. These tests are distinct from the existing local financial invariant campaign and do not prove live Reactive or source finality.
