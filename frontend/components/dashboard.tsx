@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { chains, type ChainKey } from '../lib/chains';
 import type { Agreement, Overview } from '../lib/data';
 import { formatUnits } from '../lib/finance';
-import { AgreementStatus, Allocation, DataNotice, Metric, Network, Panel, ResponsiveTable, Timeline, TokenAmount } from './ui';
+import { AgreementStatus, Allocation, DataNotice, Network, Panel, ResponsiveTable, Timeline, TokenAmount } from './ui';
 
 export const pageCopy = {
   overview: { title: 'Protocol overview', description: 'Monitor liquidity, collateral custody, and cross-chain activity in one workspace.' },
@@ -51,6 +51,24 @@ function AgreementDetails({ agreement, marketDebt }: { agreement: Agreement; mar
   </Panel>;
 }
 
+function LiquidityLedger({ overview, showCollateral = false }: { overview: Overview; showCollateral?: boolean }) {
+  const { free, reserved, principal, collateral } = overview;
+  return <section className="liquidity-ledger" aria-labelledby="liquidity-ledger-title">
+    <div className="ledger-cash">
+      <div className="panel-heading"><h2 id="liquidity-ledger-title">Vault liquidity</h2>{showCollateral && <ViewLink path="liquidity">View liquidity</ViewLink>}</div>
+      <Allocation free={free} reserved={reserved} />
+    </div>
+    <div className="ledger-exposure">
+      <div className="panel-heading"><h2>Exposure</h2></div>
+      <dl>
+        <div><dt>Outstanding principal</dt><dd><TokenAmount value={principal} /></dd></div>
+        {showCollateral && <div><dt><ViewLink path="collateral">Locked collateral</ViewLink></dt><dd><TokenAmount value={collateral} asset="test ETH" /></dd></div>}
+      </dl>
+      <p>Principal is a receivable. Vault cash includes free and reserved liquidity.</p>
+    </div>
+  </section>;
+}
+
 function Networks() {
   return <Panel title="Network infrastructure"><div className="network-grid">
     {(Object.keys(chains) as ChainKey[]).map(key => <article key={key}>
@@ -61,22 +79,13 @@ function Networks() {
 }
 
 export function DashboardContent({ view, overview, agreementId }: { view: View; overview: Overview; agreementId?: string }) {
-  const { free, reserved, principal, collateral, agreements, activity, marketDebt } = overview;
+  const { collateral, agreements, activity, marketDebt } = overview;
   switch (view) {
     case 'overview':
       return <>
-        <div className="metrics">
-          <Metric label="Managed liquidity" kind="managed"><TokenAmount value={free + reserved} /></Metric>
-          <Metric label="Free liquidity" kind="free"><TokenAmount value={free} /></Metric>
-          <Metric label="Reserved liquidity" kind="reserved"><TokenAmount value={reserved} /></Metric>
-          <Metric label="Outstanding principal" kind="principal"><TokenAmount value={principal} /></Metric>
-          <Metric label="Locked collateral" kind="collateral"><TokenAmount value={collateral} asset="test ETH" /></Metric>
-        </div>
+        <LiquidityLedger overview={overview} showCollateral />
         <div className="overview-grid">
-          <div className="stack">
-            <Panel title="Liquidity allocation" action={<ViewLink path="liquidity">View liquidity</ViewLink>}><Allocation free={free} reserved={reserved} /></Panel>
-            <Panel title="Credit agreements" action={<ViewLink path="agreements">View agreements</ViewLink>}><Agreements agreements={agreements} /></Panel>
-          </div>
+          <Panel title="Credit agreements" action={<ViewLink path="agreements">View agreements</ViewLink>}><Agreements agreements={agreements} /></Panel>
           <Panel title="Recent activity" action={<ViewLink path="activity">View activity</ViewLink>}><Timeline entries={activity} /></Panel>
         </div>
         <Networks />
@@ -88,13 +97,10 @@ export function DashboardContent({ view, overview, agreementId }: { view: View; 
       return agreement ? <AgreementDetails agreement={agreement} marketDebt={marketDebt} /> : <DataNotice kind="empty" />;
     }
     case 'liquidity':
-      return <div className="overview-grid">
-        <Panel title="Liquidity allocation"><Allocation free={free} reserved={reserved} /></Panel>
-        <Panel title="Covenant principal"><TokenAmount value={principal} /><p>Outstanding principal is a receivable. Managed liquidity includes free and reserved vault cash.</p></Panel>
-      </div>;
+      return <LiquidityLedger overview={overview} />;
     case 'collateral':
       return <Panel title="Demonstration collateral" action={<Network network="unichain" />}>
-        <TokenAmount value={collateral} asset="test ETH" />
+        <div className="record-amount"><TokenAmount value={collateral} asset="test ETH" /></div>
         <p>The demonstration assumes an exact lock in Unichain custody. The current vault has no release path. Collateral finality and attestation acceptance require separate evidence.</p>
       </Panel>;
     case 'activity':

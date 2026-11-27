@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { Activity as ActivityIcon, CircleDollarSign, Layers3, LockKeyhole, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { chains, type ChainKey } from '../lib/chains';
 import type { Activity, Agreement, DataState, TransactionState } from '../lib/data';
@@ -15,13 +14,6 @@ export function PageHeader({ title, children }: { title: string; children: React
 
 export function TokenAmount({ value, asset = 'cMOCK' }: { value: bigint; asset?: 'cMOCK' | 'test ETH' }) {
   return <span className="token">{formatUnits(value, asset === 'cMOCK' ? 6 : 18)} <small>{asset}</small></span>;
-}
-
-const metricIcons = { managed: Layers3, free: Wallet, reserved: LockKeyhole, principal: CircleDollarSign, collateral: ActivityIcon };
-
-export function Metric({ label, kind, children }: { label: string; kind: keyof typeof metricIcons; children: ReactNode }) {
-  const Icon = metricIcons[kind];
-  return <article className="metric"><Icon size={18} aria-hidden /><h2>{label}</h2><div className="metric-value">{children}</div></article>;
 }
 
 export function Network({ network }: { network: ChainKey }) {
@@ -62,8 +54,8 @@ export function Allocation({ free, reserved }: { free: bigint; reserved: bigint 
 export function Timeline({ entries }: { entries: readonly Activity[] }) {
   if (!entries.length) return <DataNotice kind="empty" />;
   return <ol className="timeline">{entries.map(entry => <li key={entry.title}>
-    <div><h3>{entry.title}</h3><TransactionStatus status={entry.status} /></div>
-    <p>{entry.description}</p><Network network={entry.chain} />
+    <div className="event-meta"><Network network={entry.chain} /><TransactionStatus status={entry.status} /></div>
+    <h3>{entry.title}</h3><p>{entry.description}</p>
   </li>)}</ol>;
 }
 

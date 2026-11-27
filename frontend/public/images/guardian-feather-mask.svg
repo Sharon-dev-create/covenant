@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 801 810">
+  <defs>
+    <filter id="feather" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <radialGradient id="hologram">
+      <stop offset=".69" stop-color="white"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g fill="white" filter="url(#feather)">
+    <path d="M125 109h25l18 104c22-48 79-87 144-88 40 0 80 10 105 35l-13-78h28l16 123c19 11 23 28 22 55-3 11-9 19-18 23-14 67-62 118-153 119-81 0-131-39-153-86-19 1-31-18-30-45 0-17 7-28 19-34Z"/>
+    <path d="M191 454c16-44 45-74 96-73 63 1 106 39 115 94 8 53-11 101-33 124-15 15-28 26-50 45-41 34-76 23-101-15-24-35-40-85-42-120z"/>
+    <path d="M114 519c1-46 18-83 44-96 29-15 50 5 50 30-1 39-28 79-56 100-28 22-41-3-38-34z"/>
+    <path d="M380 454c-1-29 36-55 75-63 39-8 56 2 51 22-7 26-44 66-77 76-24 7-45-3-49-35z"/>
+  </g>
+  <ellipse cx="548" cy="314" rx="116" ry="112" fill="url(#hologram)"/>
+</svg>
