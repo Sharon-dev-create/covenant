@@ -1,0 +1,428 @@
+{
+  "status": "all-three-routes-authenticated-single-probe-delivery-verified",
+  "stage1Manifest": "deployments/transport.stage1.verified.json",
+  "stage2Manifest": "deployments/transport.stage2.verified.json",
+  "stage3Manifest": "deployments/transport.stage3.verified.json",
+  "preflightDateUTC": "2026-11-27",
+  "preflightNotes": [
+    "Separate latest-state RPC reads; no live route executed.",
+    "Provider implementation and runtime hashes and immutable bindings match Stage 1 and Stage 2 records.",
+    "Exactly three intended active registry filters; no duplicate or unintended active filters for this Reactive contract.",
+    "Reactive requestStatus(bytes32(0)) returned (0,0)."
+  ],
+  "signerBalancesWei": {
+    "base": "29821501504796042",
+    "unichain": "9935080672182065",
+    "lasna": "3761257462591000000"
+  },
+  "signerNonces": {
+    "base": {
+      "latest": 7,
+      "pending": 7
+    },
+    "unichain": {
+      "latest": 3,
+      "pending": 3
+    },
+    "lasna": {
+      "latest": 5,
+      "pending": 5
+    }
+  },
+  "payerReservesWei": {
+    "reactive": "800000000000000000",
+    "receiverA": "20000000000000",
+    "receiverB": "5000000000000",
+    "receiverC": "40000000000000"
+  },
+  "payerDebtWei": {
+    "reactive": "0",
+    "receiverA": "0",
+    "receiverB": "0",
+    "receiverC": "0"
+  },
+  "proposedSourceTransactionCeilingsWei": {
+    "base": "10000000000000",
+    "unichain": "5000000000000",
+    "lasna": "0"
+  },
+  "proposedReserveChargePlanningBoundsWei": {
+    "reactiveTotal": "600000000000000000",
+    "receiverAPerAttempt": "5016000000000",
+    "receiverBPerAttempt": "1254000000000",
+    "receiverCPerAttempt": "5016000000000"
+  },
+  "expenditureApproved": true,
+  "observationWindowSeconds": 300,
+  "routes": {
+    "A": {
+      "status": "authenticated-delivery-observed",
+      "clientKey": "0xa6a0d3a618ef77ad31c2a968b3d0bbd7a1d4c35987fcf8c8f118f92743fba3a6",
+      "payload": "0xf7e1c93465192ae2946aa568d6d000da1d03857f708eb107620d22062f938f12",
+      "emitterSequenceBefore": 0,
+      "expectedSequence": 1,
+      "receiverCountBefore": 0,
+      "failureSequence": 0,
+      "observedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "receivedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "sourceTransaction": {
+        "chainId": 1301,
+        "transactionHash": "0xa4a07537135d4b69289e1f7f23ca7cb5cbc4d86d22bea02b4f219e42db756175",
+        "status": "success",
+        "blockNumber": 68951146,
+        "blockHash": "0x366b0f2c915f2a86c37ce55c853e4d678b7c18509f91fdb8a14416948a6fd158",
+        "blockTimestamp": 1795803574,
+        "emitter": "0xf95b88a5866b693fc7a275128759810d77e7120d",
+        "logIndex": 0,
+        "eventTopic": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "sequence": 1,
+        "gasUsed": 71531,
+        "effectiveGasPriceWei": "1500000",
+        "l1FeeWei": "20355336503",
+        "operatorFeeWei": "0",
+        "totalFeeWei": "127651836503"
+      },
+      "reactiveTransaction": {
+        "chainId": 5318007,
+        "transactionHash": "0xd984c5b42f92d57cee57019f98dbee70c09769f22e69fa814858099e7d795f4a",
+        "status": "success",
+        "blockNumber": 9395710,
+        "blockHash": "0xa914391ee41ba9a3ea2e6ba20f1f6b71ad84a3a72a8eb04a04c4aa61fa86cbf4",
+        "blockTimestamp": 1795803573,
+        "observationLogIndex": 2,
+        "callbackRequestLogIndex": 4,
+        "callbackDestinationChainId": 84532,
+        "callbackReceiver": "0xe77a43fee185e9760a1a7818619c1b05fd678630",
+        "callbackGas": 300000,
+        "callbackPayload": "0x966808470000000000000000000000000000000000000000000000000000000000000000ba6121a90bdc1042973da308293dd32d10f50fb2c8dc20e6d93010cfc5e7c67900000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000515000000000000000000000000f95b88a5866b693fc7a275128759810d77e7120d0000000000000000000000000000000000000000000000000000000000014a34000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000041c1c6a000000000000000000000000000000000000000000000000000000006b09c9b6f7e1c93465192ae2946aa568d6d000da1d03857f708eb107620d22062f938f12d2a8a6984e9cc539d03758e533a6eb79014e42268a17a200d7d312ef1a3fe458",
+        "reactionChargeWei": "24866500000000000",
+        "reserveAfterWei": "775133500000000000",
+        "debtWei": "0",
+        "requestAttempts": 1
+      },
+      "destinationTransaction": {
+        "chainId": 84532,
+        "transactionHash": "0x2ae6871aca3d3d1d138e961beda2ace66e487b7be383ca8517887657d7d6fc42",
+        "status": "success",
+        "blockNumber": 64408532,
+        "blockHash": "0xe82b85f9bceea5b7173f7bac5012dd27d1b586edfb8d4db1dca98b5b659f3a86",
+        "blockTimestamp": 1795803575,
+        "receiver": "0xe77a43fee185e9760a1a7818619c1b05fd678630",
+        "immediateCaller": "0x476f44b11f5c942c58f4c8e3d0300e5710743585",
+        "immediateCallerEvidence": "trace_transaction call trace from public Base RPC",
+        "injectedReactiveSender": "0xf95b88a5866b693fc7a275128759810d77e7120d",
+        "authenticatedSenderEvidence": "trace calldata, ProbeReceived event and verified immutable receiver checks",
+        "receiverEventLogIndex": 27,
+        "receiverCountBefore": 0,
+        "receiverCountAfter": 1,
+        "receivedSequence1": "0xba6121a90bdc1042973da308293dd32d10f50fb2c8dc20e6d93010cfc5e7c679",
+        "callbackChargeWei": "891851400000",
+        "reserveAfterWei": "19108148600000",
+        "debtWei": "0"
+      },
+      "latency": {
+        "sourceToReactionBlockSeconds": -1,
+        "reactionToDestinationBlockSeconds": 2,
+        "sourceToDestinationBlockSeconds": 1,
+        "observationStartUTC": "2026-11-27T18:20:13Z",
+        "snapshotCompletedUTC": "2026-11-27T18:21:36.036305+00:00",
+        "independentWallClockDeliverySeconds": null,
+        "limitations": "One read-only snapshot; exact independent delivery observation time not captured. Negative source-to-reaction block delta reflects cross-chain clock skew and is not negative real latency.",
+        "pollingMethod": "One completed read-only snapshot per route after operator output; route B included an earlier log-range query failure and narrower repeat. No fixed polling interval."
+      },
+      "operational": true,
+      "refreshedPreflight": {
+        "unichainChainId": 1301,
+        "unichainLatestNonce": 3,
+        "unichainPendingNonce": 3,
+        "emitterSequence": 0,
+        "receiverCount": 0,
+        "clientKeyUnused": true,
+        "nextSequenceObserved": false,
+        "nextSequenceReceived": false,
+        "reactiveReserveWei": "800000000000000000",
+        "receiverReserveWei": "20000000000000",
+        "reactiveDebtWei": "0",
+        "receiverDebtWei": "0",
+        "routeAFilterId": "0x07ba41e0ab10c747cab2ea4b571c8f18",
+        "filterVerifiedById": true,
+        "sourceGasEstimate": 72398,
+        "sourceGasLimit": 130000,
+        "maxFeePerGasWei": "4000000",
+        "l1FeeEstimateWei": "27045232877",
+        "operatorFeeEstimateWei": "0",
+        "estimatedSourceUpperWei": "547045232877",
+        "sourceTransactionSubmitted": false
+      },
+      "operationId": "0xba6121a90bdc1042973da308293dd32d10f50fb2c8dc20e6d93010cfc5e7c679",
+      "payloadHash": "0xd2a8a6984e9cc539d03758e533a6eb79014e42268a17a200d7d312ef1a3fe458"
+    },
+    "B": {
+      "status": "authenticated-delivery-observed",
+      "clientKey": "0x3a36abd527eba4ef80aafbdcf2ae5531d649c12753067ff02fa4accc742bead4",
+      "payload": "0x0e51da1144cc02b7e56739245e8fd9fbeaacd60068937c7cc5bf6ca1b35a9d37",
+      "emitterSequenceBefore": 0,
+      "expectedSequence": 1,
+      "receiverCountBefore": 0,
+      "failureSequence": 0,
+      "observedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "receivedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "sourceTransaction": {
+        "chainId": 84532,
+        "transactionHash": "0x59c0b3fbee0b16895fd124ca6988a75e8f60c228e2665567aada67ac3008132f",
+        "status": "success",
+        "blockNumber": 64411501,
+        "blockHash": "0x1d7b9e00f15810f166351c20c03ec59542ff8a607976b6e3872f0312b389875a",
+        "blockTimestamp": 1795804169,
+        "emitter": "0xf95b88a5866b693fc7a275128759810d77e7120d",
+        "logIndex": 0,
+        "eventTopic": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "sequence": 1,
+        "gasUsed": 71531,
+        "effectiveGasPriceWei": "6000000",
+        "l1FeeWei": "10982512962",
+        "operatorFeeWei": "0",
+        "totalFeeWei": "440168512962"
+      },
+      "reactiveTransaction": {
+        "chainId": 5318007,
+        "transactionHash": "0x27483032311324c3d31cedd2e80271119f023d1f357f157f15478999f9fefdb1",
+        "status": "success",
+        "blockNumber": 9396261,
+        "blockHash": "0x9a671edd7a863714c7211a0201184fe4910a5c223aff49f97fa4315f6c5799dd",
+        "blockTimestamp": 1795804168,
+        "observationLogIndex": 1,
+        "callbackRequestLogIndex": 3,
+        "callbackDestinationChainId": 1301,
+        "callbackReceiver": "0x4dba40986cfee57527b14708dabe44acc4ed05cb",
+        "callbackGas": 300000,
+        "callbackPayload": "0x9668084700000000000000000000000000000000000000000000000000000000000000000c336e1fbb382d0b889630b603bfd3104dff5e314e3528834c388074cee96e0d00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000014a34000000000000000000000000f95b88a5866b693fc7a275128759810d77e7120d000000000000000000000000000000000000000000000000000000000000051500000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000003d6d76d000000000000000000000000000000000000000000000000000000006b09cc090e51da1144cc02b7e56739245e8fd9fbeaacd60068937c7cc5bf6ca1b35a9d370c0e4262ad8e2ebed5ad848f31e4a15b4dc724a3b7d753877519ab1e442a1c43",
+        "reactionChargeWei": "24869400000000000",
+        "reserveAfterWei": "750264100000000000",
+        "debtWei": "0",
+        "requestAttempts": 1
+      },
+      "destinationTransaction": {
+        "chainId": 1301,
+        "transactionHash": "0x77a7a1d332ef250dd40c66d6b2320c30ed4223aea4b1fbc1713f743f59ca23bb",
+        "status": "success",
+        "blockNumber": 68951743,
+        "blockHash": "0xe9b99e6fb5e88c3e10003534193b0bc5175a3ce4018735a934f5681310d9f092",
+        "blockTimestamp": 1795804171,
+        "receiver": "0x4dba40986cfee57527b14708dabe44acc4ed05cb",
+        "immediateCaller": "0x775c9b990ade401060b78d0e98684eef8d2466c1",
+        "immediateCallerEvidence": "trace_transaction call trace from public Unichain RPC",
+        "injectedReactiveSender": "0xf95b88a5866b693fc7a275128759810d77e7120d",
+        "authenticatedSenderEvidence": "trace calldata, ProbeReceived event and verified immutable receiver checks",
+        "receiverEventLogIndex": 6,
+        "receiverCountBefore": 0,
+        "receiverCountAfter": 1,
+        "receivedSequence1": "0x0c336e1fbb382d0b889630b603bfd3104dff5e314e3528834c388074cee96e0d",
+        "callbackChargeWei": "222962850000",
+        "reserveAfterWei": "4777037150000",
+        "debtWei": "0"
+      },
+      "latency": {
+        "sourceToReactionBlockSeconds": -1,
+        "reactionToDestinationBlockSeconds": 3,
+        "sourceToDestinationBlockSeconds": 2,
+        "observationStartUTC": "2026-11-27T18:29:58Z",
+        "snapshotCompletedUTC": "2026-11-27T18:31:21.396929+00:00",
+        "independentWallClockDeliverySeconds": null,
+        "limitations": "One read-only snapshot; exact independent delivery observation time not captured. Negative source-to-reaction block delta reflects cross-chain clock skew and is not negative real latency.",
+        "pollingMethod": "One completed read-only snapshot per route after operator output; route B included an earlier log-range query failure and narrower repeat. No fixed polling interval."
+      },
+      "operational": true,
+      "refreshedPreflight": {
+        "baseChainId": 84532,
+        "baseLatestNonce": 7,
+        "basePendingNonce": 7,
+        "emitterSequence": 0,
+        "receiverCount": 0,
+        "clientKeyUnused": true,
+        "nextSequenceObserved": false,
+        "nextSequenceReceived": false,
+        "reactiveReserveWei": "775133500000000000",
+        "receiverReserveWei": "5000000000000",
+        "reactiveDebtWei": "0",
+        "receiverDebtWei": "0",
+        "routeBFilterId": "0x3ff97ab0b1cf8044f5cf210cbd1dca85",
+        "filterVerifiedById": true,
+        "sourceGasEstimate": 72398,
+        "sourceGasLimit": 130000,
+        "maxFeePerGasWei": "15000000",
+        "l1FeeEstimateWei": "13490766848",
+        "operatorFeeEstimateWei": "0",
+        "estimatedSourceUpperWei": "1963490766848",
+        "sourceTransactionSubmitted": false
+      },
+      "operationId": "0x0c336e1fbb382d0b889630b603bfd3104dff5e314e3528834c388074cee96e0d",
+      "payloadHash": "0x0c0e4262ad8e2ebed5ad848f31e4a15b4dc724a3b7d753877519ab1e442a1c43"
+    },
+    "C": {
+      "status": "authenticated-delivery-observed",
+      "clientKey": "0x360d404815416a259cd6f3d4954e039cbe68a81b9d6d400f37e2d1f720425273",
+      "payload": "0xbe7ae50d3585fbe9b06f2a0c9491d02c6bc86bbcdc19b2eddce36dcff2bfc20e",
+      "emitterSequenceBefore": 0,
+      "expectedSequence": 1,
+      "receiverCountBefore": 0,
+      "failureSequence": 0,
+      "observedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "receivedBefore": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "sourceTransaction": {
+        "chainId": 84532,
+        "transactionHash": "0x8b6c5cebef837f76dbab02a678ef86483f6c09a44225562ca3031710cde924f4",
+        "status": "success",
+        "blockNumber": 64413163,
+        "blockHash": "0x5d0b4981d5baf957700fc5e2fbc010fac2b462b8654ebbfcc1d5be41ed57083c",
+        "blockTimestamp": 1795804501,
+        "emitter": "0x4dba40986cfee57527b14708dabe44acc4ed05cb",
+        "logIndex": 0,
+        "eventTopic": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "sequence": 1,
+        "gasUsed": 71543,
+        "effectiveGasPriceWei": "6000000",
+        "l1FeeWei": "12564978512",
+        "operatorFeeWei": "0",
+        "totalFeeWei": "441822978512"
+      },
+      "reactiveTransaction": {
+        "chainId": 5318007,
+        "transactionHash": "0xe6f465eea22f3c27abc85adb8ba453a08d7a92fdc2e7ba60234ae9d5cb789692",
+        "status": "success",
+        "blockNumber": 9396568,
+        "blockHash": "0x308046ecd965658db0d70f1f20652c59845eb7d89a3c3a8b3dad1dad0dabf048",
+        "blockTimestamp": 1795804500,
+        "observationLogIndex": 1,
+        "callbackRequestLogIndex": 3,
+        "callbackDestinationChainId": 84532,
+        "callbackReceiver": "0xc50f6471b3a46c9f235be153bd0ffc81ae679aa9",
+        "callbackGas": 300000,
+        "callbackPayload": "0x966808470000000000000000000000000000000000000000000000000000000000000000f6bb1508c83cd0ae0f5e1bebc7b646623f16faba763e15c4fa24e237697a350f00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000014a340000000000000000000000004dba40986cfee57527b14708dabe44acc4ed05cb0000000000000000000000000000000000000000000000000000000000014a3400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000003d6ddeb000000000000000000000000000000000000000000000000000000006b09cd55be7ae50d3585fbe9b06f2a0c9491d02c6bc86bbcdc19b2eddce36dcff2bfc20e70963cecdb8f977a2d28936ab71f4f375bb626323897a5d1b2cd28ecd5a06504",
+        "reactionChargeWei": "24872300000000000",
+        "reserveAfterWei": "725391800000000000",
+        "debtWei": "0",
+        "requestAttempts": 1
+      },
+      "destinationTransaction": {
+        "chainId": 84532,
+        "transactionHash": "0x9ec49521e7af77b0561b7aeb604e5ac5f8156d518a6e3621ea43735217c2e26d",
+        "status": "success",
+        "blockNumber": 64413169,
+        "blockHash": "0x68dbc82c55a3367f7d8a4bd54c0a41a5a9e3a45d9c858a9e9d1ffae1ea9883cf",
+        "blockTimestamp": 1795804502,
+        "receiver": "0xc50f6471b3a46c9f235be153bd0ffc81ae679aa9",
+        "immediateCaller": "0x476f44b11f5c942c58f4c8e3d0300e5710743585",
+        "immediateCallerEvidence": "trace_transaction call trace from public Base RPC",
+        "injectedReactiveSender": "0xf95b88a5866b693fc7a275128759810d77e7120d",
+        "authenticatedSenderEvidence": "trace calldata, ProbeReceived event and verified immutable receiver checks",
+        "receiverEventLogIndex": 0,
+        "receiverCountBefore": 0,
+        "receiverCountAfter": 1,
+        "receivedSequence1": "0xf6bb1508c83cd0ae0f5e1bebc7b646623f16faba763e15c4fa24e237697a350f",
+        "callbackChargeWei": "891851400000",
+        "reserveAfterWei": "39108148600000",
+        "debtWei": "0"
+      },
+      "latency": {
+        "sourceToReactionBlockSeconds": -1,
+        "reactionToDestinationBlockSeconds": 2,
+        "sourceToDestinationBlockSeconds": 1,
+        "observationStartUTC": "2026-11-27T18:36:02Z",
+        "snapshotCompletedUTC": "2026-11-27T18:36:56.844437+00:00",
+        "independentWallClockDeliverySeconds": null,
+        "limitations": "One read-only snapshot; exact independent delivery observation time not captured. Negative source-to-reaction block delta reflects cross-chain clock skew and is not negative real latency.",
+        "pollingMethod": "One completed read-only snapshot per route after operator output; route B included an earlier log-range query failure and narrower repeat. No fixed polling interval."
+      },
+      "operational": true,
+      "refreshedPreflight": {
+        "baseChainId": 84532,
+        "baseLatestNonce": 8,
+        "basePendingNonce": 8,
+        "emitterSequence": 0,
+        "receiverCount": 0,
+        "clientKeyUnused": true,
+        "nextSequenceObserved": false,
+        "nextSequenceReceived": false,
+        "reactiveReserveWei": "750264100000000000",
+        "receiverReserveWei": "40000000000000",
+        "reactiveDebtWei": "0",
+        "receiverDebtWei": "0",
+        "routeCFilterId": "0x004946d7f0515d4fda30bd53d0f4c216",
+        "filterVerifiedById": true,
+        "sourceGasEstimate": 72410,
+        "sourceGasLimit": 130000,
+        "maxFeePerGasWei": "15000000",
+        "l1FeeEstimateWei": "10306627645",
+        "operatorFeeEstimateWei": "0",
+        "estimatedSourceUpperWei": "1960306627645",
+        "sourceTransactionSubmitted": false
+      },
+      "operationId": "0xf6bb1508c83cd0ae0f5e1bebc7b646623f16faba763e15c4fa24e237697a350f",
+      "payloadHash": "0x70963cecdb8f977a2d28936ab71f4f375bb626323897a5d1b2cd28ecd5a06504"
+    }
+  },
+  "note": "Funded reserves are prepaid; reserve charges must not be double-counted as fresh deposits. No retry or additional source operation is authorized by this record.",
+  "authorizationEvidence": "Human operator explicitly approved Stage 4 expenditure and sequential execution in conversation; no retry or additional deposits authorized.",
+  "actualSourceFeesWei": {
+    "base": "881991491474",
+    "unichain": "127651836503",
+    "lasna": "0"
+  },
+  "actualReserveChargesWei": {
+    "reactive": "74608200000000000",
+    "receiverA": "891851400000",
+    "receiverB": "222962850000",
+    "receiverC": "891851400000"
+  },
+  "finalReconciliation": {
+    "lasna": {
+      "chainId": 5318007,
+      "signerBalanceWei": "3761257462591000000",
+      "latestNonce": 5,
+      "pendingNonce": 5,
+      "gasPriceWei": "100000000000",
+      "payers": {
+        "reactive": {
+          "reserves(address)": 725391800000000000,
+          "debt(address)": 0
+        }
+      }
+    },
+    "base": {
+      "chainId": 84532,
+      "signerBalanceWei": "29820619513304568",
+      "latestNonce": 9,
+      "pendingNonce": 9,
+      "gasPriceWei": "6000000",
+      "payers": {
+        "receiverA": {
+          "reserves(address)": 19108148600000,
+          "debt(address)": 0
+        },
+        "receiverC": {
+          "reserves(address)": 39108148600000,
+          "debt(address)": 0
+        }
+      }
+    },
+    "unichain": {
+      "chainId": 1301,
+      "signerBalanceWei": "9934953020345562",
+      "latestNonce": 4,
+      "pendingNonce": 4,
+      "gasPriceWei": "1500000",
+      "payers": {
+        "receiverB": {
+          "reserves(address)": 4777037150000,
+          "debt(address)": 0
+        }
+      }
+    }
+  },
+  "limitations": [
+    "One successful operation per route, not a reliability or performance study.",
+    "No independently measured exact wall-clock delivery time was captured; block clocks show skew.",
+    "No independent source-chain finality proof, failure, retry, replay or financial execution was demonstrated."
+  ]
+}

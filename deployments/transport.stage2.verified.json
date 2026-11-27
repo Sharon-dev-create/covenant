@@ -1,0 +1,80 @@
+{
+  "status": "stage2-verified-routes-not-operational",
+  "stage1Manifest": "deployments/transport.stage1.verified.json",
+  "approvedStage2CeilingsWei": {
+    "base": "200000000000000",
+    "unichain": "100000000000000",
+    "lasna": "0"
+  },
+  "receivers": {
+    "A": {
+      "chainId": 84532,
+      "address": "0xe77a43FeE185E9760A1A7818619C1b05fD678630",
+      "deploymentTx": "0x64217a91f385ed0d1307d650e3eb9cefeef8349eb918d97b212dc89bce443a2e",
+      "deploymentBlock": 64212021,
+      "runtimeCodeHash": "0x78a877d5a0845fd6fe4163dfb7354f595bb002444f959f04cb9dc8eb25f26480",
+      "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "serviceProvider": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "expectedReactive": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "sourceEmitter": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "sourceChainId": 1301,
+      "destinationChainId": 84532,
+      "route": 1,
+      "gasUsed": 850876,
+      "effectiveGasPriceWei": "6000000",
+      "l1FeeWei": "24813620728620",
+      "operatorFeeWei": "0",
+      "actualExpenditureWei": "29918876728620",
+      "verificationStatus": "receipt-bytecode-constructor-and-immutable-getters-verified"
+    },
+    "B": {
+      "chainId": 1301,
+      "address": "0x4DbA40986CFeE57527B14708dAbe44acc4ED05cb",
+      "deploymentTx": "0x80debad422a604ed8c923a64d6d42123cb74b6454dcc9f42e0db7e364de09f0a",
+      "deploymentBlock": 68912251,
+      "runtimeCodeHash": "0xf7d3ce03fa99b0549ed3277d46580bdbc148e9810f0d0e37c81940ae332b9fe8",
+      "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "serviceProvider": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "expectedReactive": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "sourceEmitter": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "sourceChainId": 84532,
+      "destinationChainId": 1301,
+      "route": 2,
+      "gasUsed": 850957,
+      "effectiveGasPriceWei": "1500000",
+      "l1FeeWei": "44284533956709",
+      "operatorFeeWei": "0",
+      "actualExpenditureWei": "45560969456709",
+      "verificationStatus": "receipt-bytecode-constructor-and-immutable-getters-verified"
+    },
+    "C": {
+      "chainId": 84532,
+      "address": "0xc50F6471B3a46C9F235BE153bd0Ffc81ae679Aa9",
+      "deploymentTx": "0x5e58590b1363d98bd1c7296f005eae6deee72d699be7434a4ba233b19fa91d98",
+      "deploymentBlock": 64217424,
+      "runtimeCodeHash": "0xebe45f37c34b78a366eaf1888ca82489deb69303c0b9c276cc03e4280f104935",
+      "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "serviceProvider": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "expectedReactive": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "sourceEmitter": "0x4DbA40986CFeE57527B14708dAbe44acc4ED05cb",
+      "sourceChainId": 84532,
+      "destinationChainId": 84532,
+      "route": 3,
+      "gasUsed": 850992,
+      "effectiveGasPriceWei": "6000000",
+      "l1FeeWei": "57397233941253",
+      "operatorFeeWei": "0",
+      "actualExpenditureWei": "62503185941253",
+      "verificationStatus": "receipt-bytecode-constructor-and-immutable-getters-verified"
+    }
+  },
+  "stage2SpentWei": {
+    "base": "92422062669873",
+    "unichain": "45560969456709",
+    "lasna": "0"
+  },
+  "note": "Receiver existence is not callback delivery. Reserves and subscriptions remain unconfigured."
+}
