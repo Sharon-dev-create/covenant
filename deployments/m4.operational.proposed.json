@@ -1,0 +1,172 @@
+{
+  "status": "proposed-not-approved",
+  "revision": "84d6ee6efdc68cdc000dcb34364c9e7009334333",
+  "networks": {
+    "unichain": {
+      "chainId": 1301,
+      "rpc": "https://sepolia.unichain.org",
+      "collateralVault": null,
+      "binder": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "deploymentReceipt": null,
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1"
+    },
+    "base": {
+      "chainId": 84532,
+      "rpc": "https://sepolia.base.org",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "demoAsset": null,
+      "oracle": null,
+      "market": null,
+      "adapter": null,
+      "attestationVerifier": null,
+      "demoFactory": null,
+      "nestedFactory": null,
+      "manager": null,
+      "liquidityVault": null,
+      "signalRegistry": null,
+      "financialReceiver": null,
+      "deploymentReceipts": {}
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "rpc": "https://lasna-rpc.rnk.dev/",
+      "system": "0x8888888888888888888888888888888888888888",
+      "financialReactive": null,
+      "deploymentReceipt": null
+    }
+  },
+  "roles": {
+    "deployer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "tokenAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "marketOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "oracleOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "reactiveOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "governance": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "emergencyAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "attestors": [
+      "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "0x6F4AE62FeE718db67652500807886052e98eA422",
+      "0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9",
+      "0x1243b643C14E8A916f3Cef5474B0E047Af0757A0"
+    ],
+    "lender": "0x7345d4b839b6567525268dc89d12301eb86ef6f6",
+    "borrower": "0x18cd37C55cDc0F4e948AAaEFC68B23F4a327a295",
+    "callbackFundingAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F"
+  },
+  "governance": {
+    "threshold": 3,
+    "validitySeconds": 1800,
+    "rotationDelaySeconds": 86400,
+    "approvedFinalityPolicy": null
+  },
+  "funding": {
+    "m1bTransport": {
+      "separate": true,
+      "ceilingLasnaLreact": null,
+      "ceilingBaseEth": null,
+      "ceilingUnichainEth": null
+    },
+    "financialReactiveReserveWei": null,
+    "financialReceiverReserveWei": null,
+    "demoLockedTestEthWei": "1000000000000000",
+    "financialCeilings": null
+  },
+  "financialRoute": {
+    "originChainId": 84532,
+    "destinationChainId": 84532,
+    "registry": null,
+    "manager": null,
+    "reactive": null,
+    "receiver": null,
+    "callbackGas": 1000000,
+    "subscription": null,
+    "callbackGasStatus": "provisional-not-approved"
+  },
+  "scenario": {
+    "mockLenderDeposit": "1000000000",
+    "mockCommitment": "300000000",
+    "mockMarketDebt": "800000000",
+    "mockDraw": "200000000",
+    "valuationMockUsdc": "1000000000"
+  },
+  "evidence": [],
+  "proposedSigner": {
+    "publicAddress": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "accountLabel": "covenant-testnet",
+    "identityAndRoleApproved": false,
+    "freshKeystoreMatch": "confirmed by human operator using cast wallet address; not independently unlocked"
+  },
+  "approvals": {
+    "rolesAndCustody": false,
+    "finalityPolicy": false,
+    "governanceAndIncidentResponse": false,
+    "demoDependencies": false,
+    "callbackGasAndReserves": false,
+    "networkExpenditureCeilings": false,
+    "permanentCollateralLock": false,
+    "m1bLiveTransportEvidence": false,
+    "broadcastAuthorized": false
+  },
+  "approvalEvidence": {
+    "rolesAndCustody": null,
+    "finalityPolicy": null,
+    "governanceAndIncidentResponse": null,
+    "demoDependencies": null,
+    "callbackGasAndReserves": null,
+    "networkExpenditureCeilings": null,
+    "permanentCollateralLock": null,
+    "m1bLiveTransportEvidence": null,
+    "broadcastAuthorized": null
+  },
+  "m1bRouteEvidence": {
+    "unichainToBase": null,
+    "baseToUnichain": null,
+    "baseToBase": null
+  },
+  "lastReadOnlySnapshot": {
+    "observedAtUTC": "2026-11-26 22:53 UTC (approximate)",
+    "note": "Independent latest reads; not pinned to block; not authorization or future balance guarantee. Base primary returned HTTP 403; fallback used.",
+    "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "base": {
+      "rpc": "https://base-sepolia-rpc.publicnode.com",
+      "chainId": 84532,
+      "observedBlock": 64058454,
+      "balanceWei": "0",
+      "gasPriceWei": "6000000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "unichain": {
+      "chainId": 1301,
+      "observedBlock": 68881135,
+      "balanceWei": "10000000000000000",
+      "gasPriceWei": "1500000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "observedBlock": 9331099,
+      "balanceWei": "4725000000000000000",
+      "gasPriceWei": "100000000000",
+      "providerCodeBytes": 239,
+      "coefficientPer1000": 1000,
+      "extraGas": 100000,
+      "maxChargeGas": 50000
+    }
+  },
+  "proposedAccounts": {
+    "covenant-testnet": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "covenant-lender": "0x7345d4b839b6567525268dc89d12301eb86ef6f6",
+    "covenant-borrower": "0x18cd37C55cDc0F4e948AAaEFC68B23F4a327a295",
+    "covenant-attestor-2": "0x6F4AE62FeE718db67652500807886052e98eA422",
+    "covenant-attestor-3": "0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9",
+    "covenant-attestor-4": "0x1243b643C14E8A916f3Cef5474B0E047Af0757A0"
+  },
+  "trustAssumption": "All accounts are developer-operated; four attestors constitute one operational trust domain.",
+  "accountInventoryStatus": "Public account labels and addresses confirmed by human operator from local keystores; not independently unlocked by this workflow."
+}
