@@ -1,5 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" fill="none">
-  <rect width="36" height="36" rx="9" fill="#d3fa79"/>
-  <path d="m18 7 10 5v8c0 4-5 7-10 9-5-2-10-5-10-9v-8l10-5Z" stroke="#162015" stroke-width="1.5"/>
-  <path d="m13 18 4 4 6-8" stroke="#162015" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round">
+  <style>
+    svg { color: #000000; }
+    @media (prefers-color-scheme: dark) { svg { color: #FFFFFF; } }
+  </style>
+  <path d="M111 45 L75 24 L28 51 L28 109 L75 137 L112 115"/>
+  <path d="M91 62 L119 94 L151 32"/>
 </svg>

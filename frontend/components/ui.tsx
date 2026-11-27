@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { CovenantLogo } from './CovenantLogo';
 import { chains, type ChainKey } from '../lib/chains';
 import type { Activity, Agreement, DataState, TransactionState } from '../lib/data';
 import { allocationPercent, formatUnits } from '../lib/finance';
 
-export function Brand() {
-  return <Link href="/" className="brand"><svg viewBox="0 0 36 36" width="36" height="36" fill="none" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#d3fa79"/><path d="m18 7 10 5v8c0 4-5 7-10 9-5-2-10-5-10-9v-8l10-5Z" stroke="#162015" strokeWidth="1.5"/><path d="m13 18 4 4 6-8" stroke="#162015" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>Covenant</Link>;
+export function Brand({ size = 36 }: { size?: number }) {
+  return <Link href="/" className="brand"><CovenantLogo variant="wordmark" size={size} /></Link>;
 }
 
 export function PageHeader({ title, children }: { title: string; children: ReactNode }) {

@@ -56,6 +56,7 @@ export default async function Dashboard({ params, searchParams }: Props) {
         </Panel>}
         {state.kind !== 'ready' ? <DataNotice kind={state.kind} /> : <DashboardContent view={view} agreementId={section[1]} overview={state.data} />}
       </main>
+      <footer className="brand-footer console-footer"><Brand size={24} /></footer>
     </div>
   </div>;
 }

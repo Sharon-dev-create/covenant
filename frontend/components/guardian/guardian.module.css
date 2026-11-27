@@ -16,21 +16,6 @@
   touch-action: manipulation;
   overflow: clip;
 }
-.pause {
-  display: grid;
-  place-items: center;
-  position: absolute;
-  z-index: 1;
-  inset: auto .55rem .55rem auto;
-  width: 2.75rem;
-  height: 2.75rem;
-  color: #bababa;
-  background: #0c0c0c;
-  border: 1px solid #292929;
-  border-radius: 50%;
-  cursor: pointer;
-}
-.pause:hover { color: #fff; border-color: #585858; }
 .scene {
   position: absolute;
   pointer-events: none;
@@ -74,26 +59,18 @@
 .surface:focus-visible .core,
 .guardian[data-acknowledging="true"] .core { opacity: .95; }
 .guardian[data-acknowledging="true"] .shield { opacity: .88; }
-.status {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 @media (max-width: 600px) {
   .surface { max-width: 22rem; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .guardian[data-idle="true"] .core { animation: core-light 4.4s ease-in-out infinite; }
-  .guardian[data-idle="true"] .shield { animation: shield-light 5.2s ease-in-out infinite; }
+  .guardian[data-idle="true"] .core { animation: core-light 4.4s ease-in-out; }
+  .guardian[data-idle="true"] .shield { animation: shield-light 4.8s ease-in-out; }
   .guardian[data-acknowledging="true"] .core { animation: energy .74s ease-out both; }
   .guardian[data-acknowledging="true"] .shield { animation: pulse .74s ease-out both; }
 }
 @media (any-hover: hover) and (any-pointer: fine) {
-  .guardian[data-idle="true"][data-acknowledging="false"] .surface:hover .core { animation: none; opacity: .85; }
-  .guardian[data-idle="true"][data-acknowledging="false"] .surface:hover .shield { animation: none; opacity: .72; }
+  .guardian[data-motion="true"][data-acknowledging="false"] .surface:hover .core { animation: none; opacity: .85; }
+  .guardian[data-motion="true"][data-acknowledging="false"] .surface:hover .shield { animation: none; opacity: .72; }
 }
 @keyframes core-light { 50% { opacity: .64; } }
 @keyframes shield-light { 50% { opacity: .43; } }
@@ -105,9 +82,4 @@
 }
 :global(:root[data-theme="light"]) .shadow {
   background: radial-gradient(ellipse, #28354e60 10%, #67768b30 37%, transparent 70%);
-}
-:global(:root[data-theme="light"]) .pause {
-  color: var(--text);
-  background: var(--surface);
-  border-color: var(--line);
 }

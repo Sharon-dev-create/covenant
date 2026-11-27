@@ -8,7 +8,7 @@ export default function Home() {
   return <div className="home">
     <header className="home-header"><Brand /><div className="home-header-actions"><ThemeToggle /><Link className="button" href="/dashboard/demo">Guided demonstration</Link></div></header>
     <main id="main" tabIndex={-1}>
-      <section className="home-main" aria-labelledby="home-title" data-guardian-hero>
+      <section className="home-main" aria-labelledby="home-title">
         <div className="home-copy">
           <p className="eyebrow">Cross-chain liquidity infrastructure</p>
           <h1 id="home-title">Capital committed.<br />Liquidity when it matters.</h1>
@@ -24,6 +24,6 @@ export default function Home() {
         </ul>
       </section>
     </main>
-    <footer>Reactive Omni Buildathon · Testnet demonstration</footer>
+    <footer className="brand-footer"><Brand size={24} /><span>Reactive Omni Buildathon · Testnet demonstration</span></footer>
   </div>;
 }
