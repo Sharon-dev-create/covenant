@@ -1,0 +1,218 @@
+{
+  "status": "stage1-verified-routes-not-operational",
+  "compiler": {
+    "foundry": "1.10.0",
+    "solc": "0.8.29",
+    "evmVersion": "cancun",
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "viaIR": false
+  },
+  "networks": {
+    "unichain": {
+      "chainId": 1301,
+      "rpc": "https://sepolia.unichain.org",
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    },
+    "base": {
+      "chainId": 84532,
+      "rpc": "https://base-sepolia-rpc.publicnode.com",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "rpc": "https://lasna-rpc.rnk.dev/",
+      "system": "0x8888888888888888888888888888888888888888",
+      "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "providerRuntimeCodeHash": null,
+      "providerImplementation": null,
+      "implementationCodeHash": null,
+      "gasPriceWei": null,
+      "gasPriceCoeffPer1000": null,
+      "extraGas": null,
+      "maxChargeGas": null
+    }
+  },
+  "reactive": {
+    "address": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+    "deploymentTx": "0x5a9a6e9c5670143aad7ca8dc704c1a34dd40cdd4727bfc6ae4da029bb3510203",
+    "runtimeCodeHash": "0x91a231b11a9b79cd964f710c3d2e15b90a9a81a9523f30e1292289a22dd784b8",
+    "deploymentGas": 1334154,
+    "deploymentBlock": 9358656,
+    "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "serviceProvider": "0x8888888888888888888888888888888888888888",
+    "actualExpenditureWei": "133416734154000000",
+    "feeMethod": "gasUsed times transaction gasPrice; receipt omitted effectiveGasPrice",
+    "verificationStatus": "receipt-success-artifact-match-immutables-getters-verified"
+  },
+  "reactionFunding": {
+    "reserveWei": null,
+    "fundingTx": null
+  },
+  "payerModel": {
+    "reactiveServiceProvider": "0x8888888888888888888888888888888888888888",
+    "receiverServiceProviderByChain": {
+      "1301": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1",
+      "84532": "0x476F44b11F5C942c58f4c8E3d0300E5710743585"
+    },
+    "settlement": "pay(uint256) is provider-only; coverDebt() is public; depositTo(address) is preferred"
+  },
+  "retryPolicy": {
+    "protocolAutomaticRedelivery": "not documented by current Omni docs or reviewed library",
+    "applicationReRequests": {
+      "maxAttempts": 3,
+      "delaySeconds": 60,
+      "onlyWhenNoDestinationReceipt": true
+    }
+  },
+  "routes": {
+    "A": {
+      "route": 1,
+      "source": "unichain",
+      "destination": "base",
+      "emitter": {
+        "address": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+        "deploymentTx": "0xe00599985159516cbf0e016a76a3aa93ed63714dbf4f1af745ce8da67b77be67",
+        "runtimeCodeHash": "0xa541bbf4d404c3556e106ba70bab2728551a4bc0b63973fa9779d00944a1c69d",
+        "deploymentGas": 385724,
+        "deploymentBlock": 68911018,
+        "actualExpenditureWei": "14274202537752",
+        "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        "sourceChainId": 1301,
+        "destinationChainId": 84532,
+        "route": 1,
+        "verificationStatus": "receipt-success-artifact-match-immutables-getters-verified"
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 1301,
+        "emitter": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 1,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": [],
+      "operational": false
+    },
+    "B": {
+      "route": 2,
+      "source": "base",
+      "destination": "unichain",
+      "emitter": {
+        "address": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+        "deploymentTx": "0xa1f492d9c3d09b6ddb561d9131946819d3fd70157989386e53982cbe5a91a5d3",
+        "runtimeCodeHash": "0xff067d56318b645eba901ea8266163a9b76ee9f05779f0eb4a6476c6445b8244",
+        "deploymentGas": 385753,
+        "deploymentBlock": 64208129,
+        "actualExpenditureWei": "11290216795773",
+        "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        "sourceChainId": 84532,
+        "destinationChainId": 1301,
+        "route": 2,
+        "verificationStatus": "receipt-success-artifact-match-immutables-getters-verified"
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 84532,
+        "emitter": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 2,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": [],
+      "operational": false
+    },
+    "C": {
+      "route": 3,
+      "source": "base",
+      "destination": "base",
+      "emitter": {
+        "address": "0x4DbA40986CFeE57527B14708dAbe44acc4ED05cb",
+        "deploymentTx": "0x5318ea7d4439d041eb680fb1e4810f2e1a741c61c5865befe8a70a7c2f52542d",
+        "runtimeCodeHash": "0xd5f91b19c6731adb1f2d66f27058e22144be3a7feed217dc18d9360cab885e01",
+        "deploymentGas": 385782,
+        "deploymentBlock": 64208485,
+        "actualExpenditureWei": "13932298194853",
+        "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        "sourceChainId": 84532,
+        "destinationChainId": 84532,
+        "route": 3,
+        "verificationStatus": "receipt-success-artifact-match-immutables-getters-verified"
+      },
+      "receiver": {
+        "address": null,
+        "deploymentTx": null,
+        "runtimeCodeHash": null,
+        "deploymentGas": null
+      },
+      "expectedReactiveSender": "0xf95b88A5866b693Fc7a275128759810d77E7120d",
+      "callbackGasLimit": 300000,
+      "subscription": {
+        "id": null,
+        "registrationTx": null,
+        "chainId": 84532,
+        "emitter": "0x4DbA40986CFeE57527B14708dAbe44acc4ED05cb",
+        "topic0": "0x341440c1950b425c64dd3310c5d43ff892713cf1bb2667eb02c2585f246d4eaa",
+        "topic1": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad",
+        "topic2": 3,
+        "topic3": "0xa65f96fc951c35ead38878e0f0b7a3c744a6f5ccc1476b313353ce31712313ad"
+      },
+      "funding": {
+        "receiverReserveWei": null,
+        "fundingTx": null
+      },
+      "trials": [],
+      "operational": false
+    }
+  },
+  "verificationNotes": [
+    "No callback receiver has been deployed or authenticated live.",
+    "Runtime artifact comparisons mask compiler immutable locations and separately check immutable getters.",
+    "Operator fees were zero in rollup oracle calls pinned to deployment blocks.",
+    "Matching addresses on different chains are distinct contracts."
+  ]
+}
