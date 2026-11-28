@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.29;
+import {DemoMarket} from '../src/demo/DemoMarket.sol';
+import {DemoToken} from '../src/demo/DemoToken.sol';
+import {DemoAdapter} from '../src/demo/DemoAdapter.sol';
+import {DemoDeploymentFactory} from '../src/demo/DemoDeploymentFactory.sol';
+import {CollateralAttestationVerifier} from '../src/demo/CollateralAttestationVerifier.sol';
+import {TestnetCreditManager} from '../src/TestnetCreditManager.sol';
+import {CreditLiquidityVault} from '../src/CreditLiquidityVault.sol';
+interface VmB { function startPrank(address,address) external; function stopPrank() external; function getNonce(address) external view returns(uint64); function computeCreateAddress(address,uint256) external pure returns(address); }
+contract SequenceBTest {
+ event RuntimeHash(string component,address target,bytes32 hash);
+ VmB constant vm=VmB(address(uint160(uint256(keccak256('hevm cheat code')))));
+ address constant D=0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F;
+ address constant T=0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9;
+ address constant O=0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680;
+ address constant U=0x21AB80a429b48Cc4dFBE35308096930472f56954;
+ address constant M=0x2e1DF1C633972B4C8e2d9148484f592A5b48e244;
+ function testStage3BRemainingSequenceOnFork() public {
+  require(block.chainid==84532 && vm.getNonce(D)==16,'chain or nonce');
+  require(DemoToken(T).decimals()==6 && DemoMarket(M).asset()==T && DemoMarket(M).operator()==D,'live dependencies');
+  address f=vm.computeCreateAddress(D,18);address nested=vm.computeCreateAddress(f,1);address manager=vm.computeCreateAddress(nested,1);address vault=vm.computeCreateAddress(nested,2);
+  address[4] memory a=[D,0x6F4AE62FeE718db67652500807886052e98eA422,0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9,0x1243b643C14E8A916f3Cef5474B0E047Af0757A0];
+  vm.startPrank(D,D);
+  CollateralAttestationVerifier verifier=new CollateralAttestationVerifier(U,manager,D,D,a);
+  DemoAdapter adapter=new DemoAdapter(T,M,manager);
+  DemoDeploymentFactory outer=new DemoDeploymentFactory(T,address(verifier),O,address(adapter));
+  vm.stopPrank();
+  require(address(verifier)==vm.computeCreateAddress(D,16) && address(adapter)==vm.computeCreateAddress(D,17) && address(outer)==f,'top creates');
+  require(outer.factory()==nested && outer.manager()==manager && outer.vault()==vault,'nested creates');
+  require(verifier.manager()==manager && verifier.sourceVault()==U && verifier.governance()==D && verifier.emergencyAuthority()==D,'verifier binding');
+  for(uint i=0;i<4;i++)require(verifier.signers(i)==a[i],'signer');
+  require(verifier.signerEpoch()==1 && verifier.policyVersion()==1 && !verifier.paused(),'verifier initial');
+  require(adapter.asset()==T && adapter.market()==M && adapter.manager()==manager,'adapter binding');
+  TestnetCreditManager cm=TestnetCreditManager(manager);CreditLiquidityVault lv=CreditLiquidityVault(vault);
+  require(cm.vault()==vault && cm.asset()==T && cm.localAdapter()==address(adapter) && cm.localOracle()==O && cm.localCollateralVerifier()==address(verifier),'manager');
+  require(lv.manager()==manager && lv.consumer()==manager && address(lv.asset())==T,'vault');
+  require(cm.DEMO_COMMITMENT_LIMIT()==300e6 && cm.DEMO_PRINCIPAL_LIMIT()==300e6 && cm.DEMO_LIFETIME_LIMIT()==300e6 && cm.lifetimePrincipalCreated()==0,'caps');
+  emit RuntimeHash("verifier",address(verifier),address(verifier).codehash);
+  emit RuntimeHash("adapter",address(adapter),address(adapter).codehash);
+  emit RuntimeHash("outer",address(outer),address(outer).codehash);
+  emit RuntimeHash("nested",nested,nested.codehash);
+  emit RuntimeHash("manager",manager,manager.codehash);
+  emit RuntimeHash("vault",vault,vault.codehash);
+  require(lv.totalFree()==0 && lv.totalReserved()==0 && DemoToken(T).balanceOf(vault)==0,'initial accounting');
+ }
+}

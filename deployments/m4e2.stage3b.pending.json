@@ -1,0 +1,185 @@
+{
+  "status": "stage3b-preparation-pending-authorization",
+  "stage3aEvidence": "deployments/m4e2.stage3a.verified.json",
+  "chainId": 84532,
+  "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+  "snapshot": {
+    "block": 64620378,
+    "balanceWei": "29797844201822551",
+    "latestNonce": 16,
+    "pendingNonce": 16,
+    "gasPriceWei": "6000000"
+  },
+  "actualDependencies": {
+    "token": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+    "oracle": "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680",
+    "market": "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
+    "sourceVault": "0x21AB80a429b48Cc4dFBE35308096930472f56954"
+  },
+  "conditionalAddresses": {
+    "verifierNonce16": "0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb",
+    "adapterNonce17": "0x4505Adc907a4706B46502f2a2120320eeA45D214",
+    "outerFactoryNonce18": "0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6",
+    "nestedFactory": "0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2",
+    "manager": "0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81",
+    "liquidityVault": "0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865"
+  },
+  "forkSimulation": {
+    "test": "testStage3BRemainingSequenceOnFork",
+    "result": "pass",
+    "source": "docs/M4E2_STAGE3B_FORK_HARNESS.txt",
+    "trace": "deployments/m4e2.stage3b.fork-trace.txt",
+    "scope": "isolated Base fork, actual deployed token/oracle/market and source vault address only; no live deployments",
+    "block": 64615499
+  },
+  "estimates": {
+    "verifier": {
+      "ethEstimateGas": 1978243,
+      "bufferedGasAssumption": 2571716,
+      "syntheticL1Wei": "12720733408236",
+      "operatorFeeWei": "0"
+    },
+    "adapter": {
+      "ethEstimateGas": 332797,
+      "bufferedGasAssumption": 432637,
+      "syntheticL1Wei": "2116383870429",
+      "operatorFeeWei": "0"
+    },
+    "factory": {
+      "ethEstimateGas": null,
+      "forkConstructorTraceGas": 5910339,
+      "assumedGasLimit": 8500000,
+      "syntheticL1Wei": "36592217405898",
+      "operatorFeeWei": "0"
+    },
+    "maxExecutionPriceWei": "15000000",
+    "illustrativeTotalWei": "223994629684563"
+  },
+  "candidateCeilingWei": "1000000000000000",
+  "ceilingApproved": true,
+  "broadcastAuthorized": true,
+  "blockers": [
+    "Factory actual-state simulation requires deployed verifier/adapter; isolated fork and synthetic L1 provide conditional evidence.",
+    "Full financial plan remains blocked pending callback gas and further approvals."
+  ],
+  "stageId": "stage3b",
+  "orderedActions": [
+    {
+      "contract": "CollateralAttestationVerifier",
+      "signature": "deployVerifier(address,address,address,address,address[4])",
+      "nonce": 16,
+      "address": "0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb",
+      "arguments": [
+        "0x21AB80a429b48Cc4dFBE35308096930472f56954",
+        "0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81",
+        "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        [
+          "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+          "0x6F4AE62FeE718db67652500807886052e98eA422",
+          "0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9",
+          "0x1243b643C14E8A916f3Cef5474B0E047Af0757A0"
+        ]
+      ],
+      "valueWei": 0
+    },
+    {
+      "contract": "DemoAdapter",
+      "signature": "deployAdapter(address,address,address)",
+      "nonce": 17,
+      "address": "0x4505Adc907a4706B46502f2a2120320eeA45D214",
+      "arguments": [
+        "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+        "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
+        "0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81"
+      ],
+      "valueWei": 0
+    },
+    {
+      "contract": "DemoDeploymentFactory",
+      "signature": "deployFactory(address,address,address,address,address,address)",
+      "nonce": 18,
+      "address": "0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6",
+      "arguments": [
+        "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+        "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+        "0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb",
+        "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680",
+        "0x4505Adc907a4706B46502f2a2120320eeA45D214",
+        "0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6"
+      ],
+      "valueWei": 0
+    }
+  ],
+  "scope": {
+    "actions": [
+      "deployVerifier",
+      "deployAdapter",
+      "deployFactory"
+    ],
+    "unichainWei": 0,
+    "lasnaWei": 0,
+    "participantFundingWei": 0,
+    "providerReserveWei": 0,
+    "tokenIssuance": false,
+    "marketConfiguration": false,
+    "collateralLocking": false,
+    "financialExecution": false,
+    "callbackConfiguration": false
+  },
+  "artifactHashes": {
+    "CollateralAttestationVerifier": "0x9edd6b48521b7ca536f2e1449b52460e7cdc90c1837cc86c7b5a4694bb138439",
+    "DemoAdapter": "0x6fc119647640fbd6e99fb2dd316811de1770b01ef6e1cfd3010400cd58dd484b",
+    "DemoDeploymentFactory": "0x3ebd93ec3f7a86e98712420aff177c6f22077c951e0a6ca020cadd6e0c7d5947",
+    "TestnetCreditFactory": "0xb644aa597faa6d7fba63fd07749c95981ad16507df9f6791964184c75a603c96",
+    "TestnetCreditManager": "0x81063f5e389a5b7371549abf78b01c96f46a20c4e5954881b9ba7338bcb047f9",
+    "CreditLiquidityVault": "0x4e5b843d7823c9ed1370950119dce61355a7388c123da4fb767db10bd44b098f"
+  },
+  "runtimeHashes": {
+    "CollateralAttestationVerifier": "0x2177b31f48a4094a183d4415517188e5694580226f50bcdebe7305024ba1d375",
+    "DemoAdapter": "0x8159ae3bf694d3d99ede273b53938e0487eb304d7a030731adfab87c5f454998",
+    "DemoDeploymentFactory": "0xe8eefbb00dd1dd335136e7dcc36755a6acd93d0c47f3f723c3e609e32348782a",
+    "TestnetCreditFactory": "0xb6ebfad0925b141f6e09406eded75af8d994fdae4267c5a54ad84ca90a5f12e8",
+    "TestnetCreditManager": "0xb15816636f880a02935e8cf806b624778646d67346a77c233a86d9e39f2eedb0",
+    "CreditLiquidityVault": "0x6ff13cdb7d603060ccd21c0d75de1ea7e01636a1cbb6cb39dc96876bf64cffc4"
+  },
+  "codeChecks": {
+    "verifierNonce16": "0x",
+    "adapterNonce17": "0x",
+    "outerFactoryNonce18": "0x",
+    "nestedFactory": "0x",
+    "manager": "0x",
+    "liquidityVault": "0x"
+  },
+  "limits": {
+    "aggregateWei": 1000000000000000,
+    "perTransactionWei": [
+      150000000000000,
+      80000000000000,
+      550000000000000
+    ],
+    "maxExecutionPriceWei": 15000000
+  },
+  "authorization": {
+    "approved": true,
+    "consumed": false,
+    "evidence": "Explicit human authorization in M4-E.2 Stage 3B Financial Deployment Authorization, subject to refreshed preflight and sequential verification.",
+    "approvedAggregateWei": 1000000000000000,
+    "approvedPerTransactionWei": [
+      150000000000000,
+      80000000000000,
+      550000000000000
+    ]
+  },
+  "verifierPreflight": {
+    "scriptSimulation": "success; no broadcast, Base fork block 64620788, returned conditional verifier address",
+    "signerSpecificEthEstimateGas": 1978243,
+    "bufferedGas": 2571716,
+    "syntheticL1FeeWei": "12720733408236",
+    "operatorFeeQuoteWei": "0",
+    "executionPriceCapWei": "15000000",
+    "predictedCode": "0x",
+    "dependencyChecks": "Re-read token, market, oracle and source vault code and immutable getters; existing receipts and constructor bytes match.",
+    "note": "Live state and rollup fees must be refreshed immediately before manual submission."
+  }
+}

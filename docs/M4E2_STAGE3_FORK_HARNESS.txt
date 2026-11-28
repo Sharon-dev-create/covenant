@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.29;
+import {DemoMarket} from '../src/demo/DemoMarket.sol';
+import {DemoAdapter} from '../src/demo/DemoAdapter.sol';
+import {DemoDeploymentFactory} from '../src/demo/DemoDeploymentFactory.sol';
+import {CollateralAttestationVerifier} from '../src/demo/CollateralAttestationVerifier.sol';
+import {TestnetCreditFactory} from '../src/TestnetCreditFactory.sol';
+import {CreditManagerCore} from '../src/CreditManagerCore.sol';
+import {CreditLiquidityVault} from '../src/CreditLiquidityVault.sol';
+interface Vm { function startPrank(address,address) external; function stopPrank() external; function getNonce(address) external view returns(uint64); function computeCreateAddress(address,uint256) external pure returns(address); }
+contract SequenceTest {
+ Vm constant vm=Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
+ address constant D=0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F;
+ address constant T=0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9;
+ address constant O=0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680;
+ address constant U=0x21AB80a429b48Cc4dFBE35308096930472f56954;
+ function testFullPredictedSequenceOnFork() public {
+   require(block.chainid==84532 && vm.getNonce(D)==15,'chain or nonce');
+   address f=vm.computeCreateAddress(D,18);address nested=vm.computeCreateAddress(f,1);address manager=vm.computeCreateAddress(nested,1);address vault=vm.computeCreateAddress(nested,2);
+   address[4] memory a=[D,0x6F4AE62FeE718db67652500807886052e98eA422,0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9,0x1243b643C14E8A916f3Cef5474B0E047Af0757A0];
+   vm.startPrank(D,D);
+   DemoMarket market=new DemoMarket(T,D);
+   CollateralAttestationVerifier verifier=new CollateralAttestationVerifier(U,manager,D,D,a);
+   DemoAdapter adapter=new DemoAdapter(T,address(market),manager);
+   DemoDeploymentFactory outer=new DemoDeploymentFactory(T,address(verifier),O,address(adapter));
+   vm.stopPrank();
+   require(address(outer)==f && outer.factory()==nested && outer.manager()==manager && outer.vault()==vault,'create prediction');
+   require(address(market)==vm.computeCreateAddress(D,15) && address(verifier)==vm.computeCreateAddress(D,16) && address(adapter)==vm.computeCreateAddress(D,17),'top nonce');
+   require(verifier.manager()==manager && verifier.sourceVault()==U && adapter.manager()==manager && adapter.market()==address(market),'immutable');
+   require(CreditManagerCore(manager).vault()==vault && CreditLiquidityVault(vault).manager()==manager && CreditLiquidityVault(vault).consumer()==manager,'reciprocal');
+ }
+}

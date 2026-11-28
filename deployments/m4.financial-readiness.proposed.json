@@ -16,7 +16,7 @@
       "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
       "demoAsset": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
       "oracle": "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680",
-      "market": null,
+      "market": "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
       "adapter": null,
       "attestationVerifier": null,
       "demoFactory": null,
@@ -27,7 +27,8 @@
       "financialReceiver": null,
       "deploymentReceipts": {
         "demoAsset": "0x645fa98bbd596b914bae5c9004c9463a589b3f77659ed6527257d304db06b996",
-        "oracle": "0x46ee624c1dcde7e5706d4db8a98e9d1c98f45a8368f4dd0bafef2c599fdec189"
+        "oracle": "0x46ee624c1dcde7e5706d4db8a98e9d1c98f45a8368f4dd0bafef2c599fdec189",
+        "market": "0x377359c66bdac5c651c7423a203fd22bc0700e44b48f0efd9d568fece65b3eb2"
       }
     },
     "lasna": {
@@ -246,6 +247,26 @@
     "broadcastAuthorized": true,
     "scope": "Single manual Unichain CollateralVault deployment only; no funding or other deployments",
     "actualExpenditureWei": "19890655107390",
-    "unusedAllowanceNotCarriedForward": true
+    "unusedAllowanceNotCarriedForward": true,
+    "milestoneVerdict": "M4-E.2 STAGE 2 APPROVED \u2014 COLLATERAL VAULT VERIFIED",
+    "approvalEvidence": "User explicitly approved Stage 2 closure; unused allowance is not carried forward"
+  },
+  "stage3AMarketProposal": {
+    "status": "verified-authorization-closed",
+    "evidence": "deployments/m4e2.stage3a.pending.json",
+    "chainId": 84532,
+    "proposedCeilingWei": "60000000000000",
+    "broadcastAuthorized": true,
+    "scope": "one manual Base DemoMarket deployment only; max 0.00006 ETH, no configuration or other expenditure",
+    "actualExpenditureWei": "7122556786531",
+    "unusedAllowanceNotCarriedForward": true,
+    "milestoneVerdict": "M4-E.2 STAGE 3A APPROVED \u2014 DEMOMARKET VERIFIED",
+    "approvalEvidence": "User explicitly approved verified Stage 3A closure; unused allowance cannot carry forward"
+  },
+  "stage3BProposal": {
+    "status": "preparation-validated-authorization-pending",
+    "evidence": "deployments/m4e2.stage3b.pending.json",
+    "proposedCeilingWei": "1000000000000000",
+    "broadcastAuthorized": false
   }
 }

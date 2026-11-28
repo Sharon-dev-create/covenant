@@ -1,0 +1,97 @@
+{
+  "status": "stage3a-market-verified-authorization-closed",
+  "stage2Milestone": "M4-E.2 STAGE 2 APPROVED \u2014 COLLATERAL VAULT VERIFIED",
+  "stage2Evidence": "deployments/m4e2.stage2.verified.json",
+  "chainId": 84532,
+  "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+  "token": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+  "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+  "snapshot": {
+    "block": 64610539,
+    "signerBalanceWei": "29804966758609082",
+    "latestNonce": 15,
+    "pendingNonce": 15,
+    "gasPriceWei": "6000000"
+  },
+  "predictedAddressAtNonce15": "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
+  "predictedAddressCodeAtPreflight": "0x",
+  "creationCodeHash": "0x95ed49ab5db7cabfda074896b60ab9dad80c5f66eb321d463770dfffc00bae2b",
+  "expectedRuntimeHashWithImmutables": "0x8eedb99eb7ed89d9b77469ab149c4a8ca8dd671df541801aa9c13454b50eb836",
+  "gasEstimate": 356573,
+  "forgeScriptBufferedGas": 458389,
+  "syntheticL1FeeWei": 7009972001521,
+  "syntheticFeeOracleAssumedGasLimit": 463545,
+  "operatorFeeEstimateWei": 0,
+  "maxExecutionGasPriceWei": 15000000,
+  "proposedStage3ACeilingsWei": {
+    "base": 60000000000000,
+    "unichain": 0,
+    "lasna": 0
+  },
+  "broadcastAuthorized": true,
+  "marketReceipt": {
+    "transactionHash": "0x377359c66bdac5c651c7423a203fd22bc0700e44b48f0efd9d568fece65b3eb2",
+    "status": "success",
+    "chainId": 84532,
+    "block": 64611095,
+    "nonce": 15,
+    "from": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "contractAddress": "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
+    "exactConstructorAndCreationCode": true,
+    "runtimeHash": "0x8eedb99eb7ed89d9b77469ab149c4a8ca8dd671df541801aa9c13454b50eb836",
+    "token": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+    "operator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "borrower": "0x18cd37C55cDc0F4e948AAaEFC68B23F4a327a295",
+    "initialDebt": "0",
+    "initialSimulatedCollateral": "0",
+    "balanceWei": "0",
+    "gasUsed": 352607,
+    "effectiveGasPriceWei": "6000000",
+    "executionFeeWei": "2115642000000",
+    "l1FeeWei": "5006914786531",
+    "operatorFeeAtBlockWei": "0",
+    "totalWei": "7122556786531"
+  },
+  "stage3BFork": {
+    "result": "pass",
+    "test": "testFullPredictedSequenceOnFork",
+    "harness": "docs/M4E2_STAGE3_FORK_HARNESS.txt",
+    "scope": "isolated Base fork, 4 simulated EOA creations, verified Base token/oracle and actual Unichain vault address as a value; not live deployment or complete fee estimate"
+  },
+  "fullFinancialManifest": "not approved; validator reports callback gas not approved",
+  "authorization": "User authorizes only one DemoMarket deployment manually on Base, maximum 0.00006 ETH including L1 and operator fees; no financial activation.",
+  "simulatedCreationCount": 1,
+  "stageId": "stage3a",
+  "validatedAction": {
+    "contract": "DemoMarket",
+    "signature": "deployMarket(address,address)",
+    "arguments": [
+      "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+      "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F"
+    ],
+    "valueWei": 0,
+    "count": 1
+  },
+  "scope": {
+    "actions": [
+      "deployMarket"
+    ],
+    "participantFundingWei": 0,
+    "providerReserveWei": 0,
+    "tokenIssuance": false,
+    "marketConfiguration": false,
+    "collateralLocking": false,
+    "financialExecution": false
+  },
+  "simulationEvidence": {
+    "signerSpecificEstimate": true,
+    "singleCreationScript": true,
+    "source": "deployments/m4e2.stage3a.simulation.json"
+  },
+  "closing": {
+    "baseBalanceWei": "29797844201822551",
+    "latestNonce": 16,
+    "pendingNonce": 16,
+    "unusedAllowanceNotCarriedForward": true
+  }
+}

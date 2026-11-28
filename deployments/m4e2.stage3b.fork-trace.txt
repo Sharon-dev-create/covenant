@@ -1,0 +1,203 @@
+Compiling 1 files with Solc 0.8.29
+Solc 0.8.29 finished in 971.97ms
+Compiler run successful with warnings:
+Warning (8760): This declaration has the same name as another declaration.
+   --> src/CreditManagerCore.sol:486:9:
+    |
+486 |         Agreement storage agreement = agreements[id];
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The other declaration is here:
+   --> src/CreditManagerCore.sol:514:5:
+    |
+514 |     function agreement(bytes32 id) external view returns (Terms memory terms, State state, bytes32 reservationId) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (8760): This declaration has the same name as another declaration.
+   --> src/CreditManagerCore.sol:503:9:
+    |
+503 |         Agreement storage agreement = agreements[id];
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The other declaration is here:
+   --> src/CreditManagerCore.sol:514:5:
+    |
+514 |     function agreement(bytes32 id) external view returns (Terms memory terms, State state, bytes32 reservationId) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (8760): This declaration has the same name as another declaration.
+   --> src/CreditManagerCore.sol:509:9:
+    |
+509 |         Agreement storage agreement = agreements[id];
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The other declaration is here:
+   --> src/CreditManagerCore.sol:514:5:
+    |
+514 |     function agreement(bytes32 id) external view returns (Terms memory terms, State state, bytes32 reservationId) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (8760): This declaration has the same name as another declaration.
+   --> src/CreditManagerCore.sol:519:33:
+    |
+519 |     function _close(bytes32 id, Agreement storage agreement) private {
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The other declaration is here:
+   --> src/CreditManagerCore.sol:514:5:
+    |
+514 |     function agreement(bytes32 id) external view returns (Terms memory terms, State state, bytes32 reservationId) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+2026-11-28T05:49:28.782982Z  WARN foundry_fork_db::cache: Failed to read cache file err=Os { code: 2, kind: NotFound, message: "No such file or directory" } path="/home/topg/.foundry/cache/rpc/base-sepolia/64615499"
+2026-11-28T05:49:29.673097Z  WARN evm::traces::external: etherscan config not found
+
+Ran 1 test for test/SequenceB.t.sol:SequenceBTest
+[PASS] testStage3BRemainingSequenceOnFork() (gas: 8480310)
+Traces:
+  [8480310] SequenceBTest::testStage3BRemainingSequenceOnFork()
+    ├─ [0] VM::getNonce(0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F) [staticcall]
+    │   └─ ← [Return] 16
+    ├─ [292] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9::decimals() [staticcall]
+    │   └─ ← [Return] 6
+    ├─ [238] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244::asset() [staticcall]
+    │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    ├─ [282] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244::operator() [staticcall]
+    │   └─ ← [Return] 0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F
+    ├─ [0] VM::computeCreateAddress(0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F, 18) [staticcall]
+    │   └─ ← [Return] DemoDeploymentFactory: [0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6]
+    ├─ [0] VM::computeCreateAddress(DemoDeploymentFactory: [0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6], 1) [staticcall]
+    │   └─ ← [Return] TestnetCreditFactory: [0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2]
+    ├─ [0] VM::computeCreateAddress(TestnetCreditFactory: [0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2], 1) [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [0] VM::computeCreateAddress(TestnetCreditFactory: [0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2], 2) [staticcall]
+    │   └─ ← [Return] CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]
+    ├─ [0] VM::startPrank(0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F, 0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F)
+    │   └─ ← [Return]
+    ├─ [1961508] → new CollateralAttestationVerifier@0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb
+    │   └─ ← [Return] 8238 bytes of code
+    ├─ [329018] → new DemoAdapter@0x4505Adc907a4706B46502f2a2120320eeA45D214
+    │   └─ ← [Return] 1237 bytes of code
+    ├─ [5910339] → new DemoDeploymentFactory@0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6
+    │   ├─ [5251912] → new TestnetCreditFactory@0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2
+    │   │   ├─ [3648948] → new TestnetCreditManager@0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81
+    │   │   │   ├─ [292] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9::decimals() [staticcall]
+    │   │   │   │   └─ ← [Return] 6
+    │   │   │   └─ ← [Return] 18185 bytes of code
+    │   │   ├─ [1427965] → new CreditLiquidityVault@0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865
+    │   │   │   └─ ← [Return] 7127 bytes of code
+    │   │   ├─ [347] TestnetCreditManager::vault() [staticcall]
+    │   │   │   └─ ← [Return] CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]
+    │   │   ├─ [371] TestnetCreditManager::asset() [staticcall]
+    │   │   │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    │   │   ├─ [348] TestnetCreditManager::localCollateralVerifier() [staticcall]
+    │   │   │   └─ ← [Return] CollateralAttestationVerifier: [0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb]
+    │   │   ├─ [327] TestnetCreditManager::localOracle() [staticcall]
+    │   │   │   └─ ← [Return] 0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680
+    │   │   ├─ [305] TestnetCreditManager::localAdapter() [staticcall]
+    │   │   │   └─ ← [Return] DemoAdapter: [0x4505Adc907a4706B46502f2a2120320eeA45D214]
+    │   │   ├─ [238] CreditLiquidityVault::manager() [staticcall]
+    │   │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   │   ├─ [282] CreditLiquidityVault::consumer() [staticcall]
+    │   │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   │   ├─ [305] CreditLiquidityVault::asset() [staticcall]
+    │   │   │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    │   │   └─ ← [Return] 465 bytes of code
+    │   ├─ [215] DemoAdapter::asset() [staticcall]
+    │   │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    │   ├─ [203] TestnetCreditFactory::manager() [staticcall]
+    │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   ├─ [237] DemoAdapter::manager() [staticcall]
+    │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   ├─ [259] DemoAdapter::market() [staticcall]
+    │   │   └─ ← [Return] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244
+    │   ├─ [259] DemoAdapter::market() [staticcall]
+    │   │   └─ ← [Return] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244
+    │   ├─ [238] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244::asset() [staticcall]
+    │   │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    │   ├─ [203] TestnetCreditFactory::manager() [staticcall]
+    │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   ├─ [238] CollateralAttestationVerifier::manager() [staticcall]
+    │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   ├─ [203] TestnetCreditFactory::manager() [staticcall]
+    │   │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    │   ├─ [225] TestnetCreditFactory::vault() [staticcall]
+    │   │   └─ ← [Return] CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]
+    │   └─ ← [Return] 258 bytes of code
+    ├─ [0] VM::stopPrank()
+    │   └─ ← [Return]
+    ├─ [0] VM::computeCreateAddress(0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F, 16) [staticcall]
+    │   └─ ← [Return] CollateralAttestationVerifier: [0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb]
+    ├─ [0] VM::computeCreateAddress(0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F, 17) [staticcall]
+    │   └─ ← [Return] DemoAdapter: [0x4505Adc907a4706B46502f2a2120320eeA45D214]
+    ├─ [203] DemoDeploymentFactory::factory() [staticcall]
+    │   └─ ← [Return] TestnetCreditFactory: [0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2]
+    ├─ [181] DemoDeploymentFactory::manager() [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [225] DemoDeploymentFactory::vault() [staticcall]
+    │   └─ ← [Return] CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]
+    ├─ [238] CollateralAttestationVerifier::manager() [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [259] CollateralAttestationVerifier::sourceVault() [staticcall]
+    │   └─ ← [Return] 0x21AB80a429b48Cc4dFBE35308096930472f56954
+    ├─ [282] CollateralAttestationVerifier::governance() [staticcall]
+    │   └─ ← [Return] 0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F
+    ├─ [260] CollateralAttestationVerifier::emergencyAuthority() [staticcall]
+    │   └─ ← [Return] 0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F
+    ├─ [2566] CollateralAttestationVerifier::signers(0) [staticcall]
+    │   └─ ← [Return] 0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F
+    ├─ [2566] CollateralAttestationVerifier::signers(1) [staticcall]
+    │   └─ ← [Return] 0x6F4AE62FeE718db67652500807886052e98eA422
+    ├─ [2566] CollateralAttestationVerifier::signers(2) [staticcall]
+    │   └─ ← [Return] 0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9
+    ├─ [2566] CollateralAttestationVerifier::signers(3) [staticcall]
+    │   └─ ← [Return] 0x1243b643C14E8A916f3Cef5474B0E047Af0757A0
+    ├─ [2425] CollateralAttestationVerifier::signerEpoch() [staticcall]
+    │   └─ ← [Return] 1
+    ├─ [2398] CollateralAttestationVerifier::policyVersion() [staticcall]
+    │   └─ ← [Return] 1
+    ├─ [2420] CollateralAttestationVerifier::paused() [staticcall]
+    │   └─ ← [Return] false
+    ├─ [215] DemoAdapter::asset() [staticcall]
+    │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    ├─ [259] DemoAdapter::market() [staticcall]
+    │   └─ ← [Return] 0x2e1DF1C633972B4C8e2d9148484f592A5b48e244
+    ├─ [237] DemoAdapter::manager() [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [347] TestnetCreditManager::vault() [staticcall]
+    │   └─ ← [Return] CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]
+    ├─ [371] TestnetCreditManager::asset() [staticcall]
+    │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    ├─ [305] TestnetCreditManager::localAdapter() [staticcall]
+    │   └─ ← [Return] DemoAdapter: [0x4505Adc907a4706B46502f2a2120320eeA45D214]
+    ├─ [327] TestnetCreditManager::localOracle() [staticcall]
+    │   └─ ← [Return] 0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680
+    ├─ [348] TestnetCreditManager::localCollateralVerifier() [staticcall]
+    │   └─ ← [Return] CollateralAttestationVerifier: [0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb]
+    ├─ [238] CreditLiquidityVault::manager() [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [282] CreditLiquidityVault::consumer() [staticcall]
+    │   └─ ← [Return] TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81]
+    ├─ [305] CreditLiquidityVault::asset() [staticcall]
+    │   └─ ← [Return] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9
+    ├─ [251] TestnetCreditManager::DEMO_COMMITMENT_LIMIT() [staticcall]
+    │   └─ ← [Return] 300000000 [3e8]
+    ├─ [273] TestnetCreditManager::DEMO_PRINCIPAL_LIMIT() [staticcall]
+    │   └─ ← [Return] 300000000 [3e8]
+    ├─ [229] TestnetCreditManager::DEMO_LIFETIME_LIMIT() [staticcall]
+    │   └─ ← [Return] 300000000 [3e8]
+    ├─ [2350] TestnetCreditManager::lifetimePrincipalCreated() [staticcall]
+    │   └─ ← [Return] 0
+    ├─ emit RuntimeHash(component: "verifier", target: CollateralAttestationVerifier: [0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb], hash: 0x2177b31f48a4094a183d4415517188e5694580226f50bcdebe7305024ba1d375)
+    ├─ emit RuntimeHash(component: "adapter", target: DemoAdapter: [0x4505Adc907a4706B46502f2a2120320eeA45D214], hash: 0x8159ae3bf694d3d99ede273b53938e0487eb304d7a030731adfab87c5f454998)
+    ├─ emit RuntimeHash(component: "outer", target: DemoDeploymentFactory: [0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6], hash: 0xe8eefbb00dd1dd335136e7dcc36755a6acd93d0c47f3f723c3e609e32348782a)
+    ├─ emit RuntimeHash(component: "nested", target: TestnetCreditFactory: [0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2], hash: 0xb6ebfad0925b141f6e09406eded75af8d994fdae4267c5a54ad84ca90a5f12e8)
+    ├─ emit RuntimeHash(component: "manager", target: TestnetCreditManager: [0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81], hash: 0xb15816636f880a02935e8cf806b624778646d67346a77c233a86d9e39f2eedb0)
+    ├─ emit RuntimeHash(component: "vault", target: CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865], hash: 0x6ff13cdb7d603060ccd21c0d75de1ea7e01636a1cbb6cb39dc96876bf64cffc4)
+    ├─ [2351] CreditLiquidityVault::totalFree() [staticcall]
+    │   └─ ← [Return] 0
+    ├─ [2327] CreditLiquidityVault::totalReserved() [staticcall]
+    │   └─ ← [Return] 0
+    ├─ [2538] 0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9::balanceOf(CreditLiquidityVault: [0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865]) [staticcall]
+    │   └─ ← [Return] 0
+    └─ ← [Stop]
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 5.42s (2.77s CPU time)
+
+Ran 1 test suite in 6.18s (5.42s CPU time): 1 tests passed, 0 failed, 0 skipped (1 total tests)
