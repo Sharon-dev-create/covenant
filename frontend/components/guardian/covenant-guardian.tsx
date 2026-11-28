@@ -56,13 +56,13 @@ export function CovenantGuardian() {
     }
     const frame = surface.current;
     if (!frame) return;
-    const finePointer = matchMedia('(any-hover: hover) and (any-pointer: fine)');
     const neutral = () => {
       pointerX.set(0);
       pointerY.set(0);
     };
     const track = (event: PointerEvent) => {
-      if (!finePointer.matches || event.pointerType !== 'mouse') return;
+      // Actual pointer events also work when a browser reports no fine pointer.
+      if (event.pointerType !== 'mouse') return;
       const box = frame.getBoundingClientRect();
       pointerX.set(normalize(event.clientX, box.left + box.width / 2, window.innerWidth));
       pointerY.set(normalize(event.clientY, box.top + box.height / 2, window.innerHeight));
@@ -73,13 +73,11 @@ export function CovenantGuardian() {
     window.addEventListener('pointermove', track, { passive: true, capture: true });
     window.addEventListener('pointerout', leaveViewport, true);
     window.addEventListener('pointercancel', neutral, true);
-    finePointer.addEventListener('change', neutral);
     window.addEventListener('blur', neutral);
     return () => {
       window.removeEventListener('pointermove', track, true);
       window.removeEventListener('pointerout', leaveViewport, true);
       window.removeEventListener('pointercancel', neutral, true);
-      finePointer.removeEventListener('change', neutral);
       window.removeEventListener('blur', neutral);
       neutral();
     };

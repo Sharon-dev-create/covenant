@@ -1,0 +1,319 @@
+{
+  "status": "bounded-recovery-policy-approval-required",
+  "evidenceBasis": "deployments/transport.stage4.verified.json",
+  "acceptedIncidentEvidence": "deployments/transport.stage3.verified.json",
+  "stage5TransactionsExecuted": true,
+  "broadcastAuthorized": true,
+  "freshPreflight": {
+    "status": "read-only-rpc-verified",
+    "note": "Operator-reported Route C results independently reconciled with public RPC reads; state and fee inputs must be rechecked before each broadcast.",
+    "chainIds": {
+      "base": 84532,
+      "unichain": 1301,
+      "lasna": 5318007
+    },
+    "blocks": {
+      "base": 64514900,
+      "unichain": 68972420,
+      "lasna": 9415339
+    },
+    "signerBalancesWei": {
+      "base": "29820619513304568",
+      "unichain": "9934953020345562",
+      "lasna": "3761257462591000000"
+    },
+    "noncesLatestAndPending": {
+      "base": 9,
+      "unichain": 4,
+      "lasna": 5
+    },
+    "reservesWei": {
+      "reactive": "725391800000000000",
+      "receiverA": "19108148600000",
+      "receiverB": "4777037150000",
+      "receiverC": "39108148600000"
+    },
+    "debtsWei": "0",
+    "subscriptions": "three exact expected active filters",
+    "contractRuntimeHashesAndImmutableBindings": "match stage 1 and 2 manifests",
+    "implementationHashes": "match stage 4 records",
+    "sequencesAndReceivedCounts": "all 1",
+    "failureSequences": "all 0",
+    "oldRequestAttempts": "all 1",
+    "routeCNextSequenceObservedAndReceived": "zero",
+    "routeCNewKey": "0x380f8a2f104980cb91c36734f63f1fbe9a6ad56d8a22c11490f53ebacaeafc0f",
+    "routeCNewKeyState": "zero",
+    "simulations": {
+      "setFailure2Gas": 28156,
+      "emitProbeGas": 55242,
+      "retry": "depends on operation existing and cooldown",
+      "clear": "nonzero-to-zero state unavailable now"
+    },
+    "syntheticSignedShapeL1FeeEstimatesWei": [
+      "254252841312",
+      "317089905526",
+      "254252841312"
+    ],
+    "baseOperatorFeesWei": [
+      "0",
+      "0",
+      "0"
+    ],
+    "subscriptionRegistryVersion": 16639,
+    "operatorReportedCallResult": "0x",
+    "gasPriceWei": {
+      "base": "6000000",
+      "unichain": "1500000",
+      "lasna": "100000000000"
+    },
+    "providerFees": {
+      "baseAndUnichain": {
+        "coefficientPer1000": 1100,
+        "extraGas": 80000,
+        "maxChargeGas": 50000
+      },
+      "lasna": {
+        "coefficientPer1000": 1000,
+        "extraGas": 100000,
+        "maxChargeGas": 50000
+      }
+    },
+    "providerImplementations": {
+      "base": "0x49e4ac6954e39c006b0a31955a26a9655c7ce059",
+      "unichain": "0xd00a7f9034337d900e68b20c0da45c3a4f1bf784",
+      "lasna": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "baseGasCapPlusSyntheticL1Wei": "6375595588150"
+  },
+  "lastVerifiedSnapshot": {
+    "reactiveReserveWei": "725391800000000000",
+    "receiverAReserveWei": "19108148600000",
+    "receiverBReserveWei": "4777037150000",
+    "receiverCReserveWei": "39108148600000",
+    "debtWei": "0",
+    "note": "Historical Stage 4 snapshot; not current."
+  },
+  "proposedCoreCeilings": {
+    "baseSignerWei": "50000000000000",
+    "lasnaSignerWei": "150000000000000000",
+    "unichainSignerWei": "0",
+    "reactiveReserveChargeWei": "300000000000000000",
+    "receiverCReserveChargeWei": "20000000000000",
+    "approval": "pending",
+    "limitations": "Reserve charges and rollup L1/operator fees cannot be hard capped by transaction gas-price settings."
+  },
+  "tests": {
+    "controlledFailure": "pending",
+    "originalOperationRecovery": "pending",
+    "destinationReplay": "pending",
+    "sourceDuplicateRpcSimulation": "pending",
+    "authorizationAndIsolation": "local-only",
+    "ordinaryAdditionalSamples": "pending-separate-budget"
+  },
+  "controlledFailureRoute": 3,
+  "expectedSequenceConditional": 2,
+  "maximumRequestsPerOperation": 3,
+  "retryCooldownSeconds": 60,
+  "automaticProviderRetry": "not-established",
+  "notes": [
+    "No timeout alone proves failure.",
+    "No financial deployment or reserve top-up authorized.",
+    "Source finality is not established by authenticated callback delivery."
+  ],
+  "observedFirstTransaction": {
+    "transactionHash": "0x33c92a30ad60968843f4ae7a3adba7b5de63a1a487b24984a7797118bcba0b49",
+    "chainId": 84532,
+    "blockNumber": 64515823,
+    "nonce": 9,
+    "receiptStatus": "success",
+    "from": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "to": "0xc50F6471B3a46C9F235BE153bd0Ffc81ae679Aa9",
+    "function": "setFailureSequence(uint64)",
+    "argument": 2,
+    "valueWei": "0",
+    "gasUsed": 27810,
+    "effectiveGasPriceWei": "6000000",
+    "l1FeeWei": "207766621504",
+    "executionFeeWei": "166860000000",
+    "totalFeeWei": "374626621504",
+    "operatorFeeWei": "not separately reported in receipt",
+    "verifiedState": "failSequence 2; receiver count 1; received(2) zero; emitter sequence 1; observed(3,2) zero",
+    "operatorReceipt": "confirmed by operator and independently matched",
+    "note": "Observed on-chain before issuing any command this turn; transaction timing relative to authorization not inferred."
+  },
+  "sourceProbePreflight": {
+    "baseBlock": 64516794,
+    "lasnaBlock": 9415688,
+    "baseChainId": 84532,
+    "signerBalanceWei": "29820244886683064",
+    "latestNonce": 10,
+    "pendingNonce": 10,
+    "routeCFailureSequence": 2,
+    "emitterSequence": 1,
+    "receiverCount": 1,
+    "receivedSequence2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "observedSequence2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "key": "0x380f8a2f104980cb91c36734f63f1fbe9a6ad56d8a22c11490f53ebacaeafc0f",
+    "keyUnused": true,
+    "payload": "0xd2d721b1f786246d14918ae0951e5bab035148c241bc9942d2dfc89ccaf9b5ba",
+    "estimatedGas": 55242,
+    "syntheticL1FeeWei": "286640397878",
+    "operatorFeeEstimateWei": "0",
+    "reactiveReserveWei": "725391800000000000",
+    "receiverCReserveWei": "39108148600000",
+    "debtsWei": "0",
+    "providerBindings": "matched"
+  },
+  "originalSourceOperation": {
+    "operationId": "0x1359388bd2e63fbc5d00736913e75024cdf9ac6198d8ff690b426f343b0b85ef",
+    "sequence": 2,
+    "sourceTx": "0x6933a105356fa475ef8d57ed540e7800465ae30b1b423f6db81ee53856957fa6",
+    "sourceBlock": 64525848,
+    "sourceReceipt": "success",
+    "sourceLogIndex": 2,
+    "sourceFeeWei": "1055621578501",
+    "reactiveTx": "0xe7278733d9449d781b17478b739d9fb34ad8f03b81d885c63328a88353daf98b",
+    "destinationTx": "0x4031aa516e058afd3537d5eaf531c44a336bdd9c2a0adab51977f1fb21e18d5e",
+    "receiverRevert": "ProbeFailure() 0x74a190b1; authenticated proxy and expected Reactive sender observed in trace",
+    "receiverCount": 1,
+    "receivedSequence2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "requestAttempts": 1,
+    "getCallbacks": "empty at observation; not proof of terminal relay status",
+    "automaticRetryEligibility": "unresolved",
+    "reactiveReserveWei": "700519500000000000",
+    "receiverCReserveWei": "38473208800000",
+    "providerDebtWei": "0"
+  },
+  "duplicateSourceAttempt": {
+    "tx": "0xb85eabf98bdcbb26798221e9c1039c1f3cc4dc6e0bb797460e84ed52546c4f79",
+    "receipt": "reverted",
+    "revert": "DuplicateOperation() 0x5f7b915a",
+    "gasUsed": 24672,
+    "executionFeeWei": "148032000000",
+    "l1FeeWei": "602403465534",
+    "totalKnownFeeWei": "750435465534",
+    "operatorFee": "not separately reported",
+    "stopCondition": "failed transaction; do not repeat"
+  },
+  "knownBaseSignerFeeTotalWei": "2638359688282",
+  "nextAction": "stopped; reconcile automatic delivery eligibility and human incident disposition; no repeat source transaction",
+  "incidentDisposition": {
+    "classification": "OPERATIONAL DEVIATION \u2014 DUPLICATE SOURCE TRANSACTION ACCEPTED",
+    "retrospectivelyAuthorized": false,
+    "humanDisposition": "accepted; controlled failure verification accepted; reset authorized",
+    "rootCause": "unconfirmed",
+    "nonceSequence": {
+      "failureSwitch": 9,
+      "originalSource": 10,
+      "duplicateSource": 11,
+      "currentLatest": 12,
+      "currentPending": 12
+    },
+    "duplicateEffect": "reverted without logs; emitter operation mapping and observed operation unchanged; request count remains one; no additional request observed"
+  },
+  "resetPreflight": {
+    "baseBlock": 64533275,
+    "lasnaBlock": 9418726,
+    "baseBalanceWei": "29818438829639029",
+    "lasnaBalanceWei": "3761257462591000000",
+    "baseNonceLatestAndPending": 12,
+    "lasnaNonceLatestAndPending": 5,
+    "emitterSequence": 2,
+    "receiverCount": 1,
+    "failSequence": 2,
+    "received2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "observed2": "0x1359388bd2e63fbc5d00736913e75024cdf9ac6198d8ff690b426f343b0b85ef",
+    "attempts": 1,
+    "retryAfterUnix": 1795827098,
+    "providerCallbacks": "empty",
+    "automaticEligibility": "unresolved",
+    "estimatedGas": 28144,
+    "ethCallResult": "0x",
+    "syntheticL1FeeWei": "275022038012",
+    "operatorFeeEstimateWei": "0",
+    "executionCapWei": "1800000000000",
+    "reactiveReserveWei": "700519500000000000",
+    "receiverCReserveWei": "38473208800000",
+    "providerDebtsWei": "0"
+  },
+  "resetTransaction": {
+    "hash": "0x3d742cc3d3718692d6e196bb7cfb30e30c2813d567d751155fb124e91b1623b2",
+    "chainId": 84532,
+    "block": 64533788,
+    "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "receiver": "0xc50F6471B3a46C9F235BE153bd0Ffc81ae679Aa9",
+    "receipt": "success",
+    "failSequence": 0,
+    "gasUsed": 27798,
+    "effectiveGasPriceWei": "6000000",
+    "executionFeeWei": "166788000000",
+    "l1FeeWei": "290888022743",
+    "totalKnownFeeWei": "457676022743",
+    "operatorFee": "not separately reported"
+  },
+  "postReset": {
+    "baseBlock": 64533994,
+    "lasnaBlock": 9418862,
+    "baseNonceLatestAndPending": 13,
+    "lasnaNonceLatestAndPending": 5,
+    "baseBalanceWei": "29817981153616286",
+    "lasnaBalanceWei": "3761257462591000000",
+    "receiverCount": 1,
+    "received2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "failSequence": 0,
+    "originalOperationObserved": true,
+    "requestAttempts": 1,
+    "providerCallbackRecords": "empty",
+    "automaticRecoveryObserved": false,
+    "automaticDeliveryEligibility": "unresolved; no manual retry",
+    "reactiveReserveWei": "700519500000000000",
+    "receiverCReserveWei": "38473208800000",
+    "debtsWei": "0"
+  },
+  "explorerEvidence": {
+    "source": "operator-reported Lasna Reactscan; screenshot not available to assistant in this turn",
+    "transaction": "0xe7278733d9449d781b17478b739d9fb34ad8f03b81d885c63328a88353daf98b",
+    "status": "SUCCESS",
+    "block": 9417363,
+    "gasUsed": 200093,
+    "gasPriceWei": "100000000000",
+    "transactionFeeWei": "20009300000000000",
+    "callbackCount": 1,
+    "destinationChainId": 84532,
+    "lifecycle": [
+      "REQUESTED",
+      "RELAYED",
+      "SENT",
+      "INCLUDED",
+      "CONFIRMED",
+      "POSTED"
+    ],
+    "attestation": "CONFIRMED",
+    "destinationConfirmations": "at least 10",
+    "interpretation": "delivery completion does not prove application success; destination trace proves ProbeFailure; no automatic-redelivery guarantee inferred"
+  },
+  "recoveryReadiness": {
+    "operationId": "0x1359388bd2e63fbc5d00736913e75024cdf9ac6198d8ff690b426f343b0b85ef",
+    "receiverCount": 1,
+    "received2": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "failSequence": 0,
+    "requestAttempts": 1,
+    "retryAfter": 1795827098,
+    "lasnaObservedTimestamp": 1795829309,
+    "retryEstimateGas": 64924,
+    "baseNonceLatestAndPending": 13,
+    "lasnaNonceLatestAndPending": 5,
+    "baseBalanceWei": "29817981153616286",
+    "lasnaBalanceWei": "3761257462591000000",
+    "reactiveReserveWei": "700519500000000000",
+    "receiverCReserveWei": "38473208800000",
+    "providerDebtsWei": "0",
+    "proxyLogsThroughBaseBlock": 64537183,
+    "matchingCallbacks": [
+      "0x4031aa516e058afd3537d5eaf531c44a336bdd9c2a0adab51977f1fb21e18d5e"
+    ],
+    "getCallbacks": "empty",
+    "automaticRedelivery": "cannot be conclusively excluded",
+    "boundedRecoveryPolicy": "proposed only; one operator retry for same operation; stop on unexpected attempt, reserve movement or delivery ambiguity; approval required"
+  }
+}
