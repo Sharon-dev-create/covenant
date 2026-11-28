@@ -1,0 +1,46 @@
+{
+  "status": "preparation-incomplete-not-authorized",
+  "stage2Evidence": "deployments/m4e2.stage2.verified.json",
+  "actualDependencies": {
+    "collateralVault": "0x21AB80a429b48Cc4dFBE35308096930472f56954",
+    "demoToken": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+    "demoOracle": "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680"
+  },
+  "baseSigner": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+  "snapshot": {
+    "block": 64601383,
+    "chainId": 84532,
+    "balanceWei": "29804966758609082",
+    "latestNonce": 15,
+    "pendingNonce": 15,
+    "gasPriceWei": "6000000"
+  },
+  "conditionalPredictions": {
+    "marketAtNonce15": "0x2e1DF1C633972B4C8e2d9148484f592A5b48e244",
+    "verifierAtNonce16": "0x62932522aD51c7674EfdC6eEEd9ff34d2cC9c8bb",
+    "adapterAtNonce17": "0x4505Adc907a4706B46502f2a2120320eeA45D214",
+    "outerFactoryAtNonce18": "0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6",
+    "nestedFactory": "0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2",
+    "manager": "0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81",
+    "vault": "0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865"
+  },
+  "estimates": {
+    "marketGas": 356573,
+    "marketL1Wei": "11103367166837",
+    "verifierGas": 1978243,
+    "verifierL1Wei": "51120968568104",
+    "adapterSyntheticL1Wei": "9303678949580",
+    "adapterAssumedGasLimit": 500000,
+    "factorySyntheticL1Wei": "160860346534722",
+    "factoryAssumedGasLimit": 8500000,
+    "note": "Market and verifier eth_estimateGas are actual-address/conditional-manager simulations; adapter and factory have only synthetic data-fee estimates, not actual deployment simulations.",
+    "marketForgeBufferedGas": 458389,
+    "verifierForgeBufferedGasAtCurrentNonce15": 2549960,
+    "verifierScriptSimulationNote": "Independent simulation at nonce 15; repeat at actual nonce 16 after market verification."
+  },
+  "illustrativeTotalWei": "412917276219243",
+  "provisionalDiscussionCeilingWei": "1000000000000000",
+  "ceilingApproved": false,
+  "broadcastAuthorized": false,
+  "nextGate": "Refresh actual market and verifier fee estimates and nonce before requesting scoped authorization; actual adapter/factory simulations remain dependency-blocked and nonce pinning risk must be accepted."
+}

@@ -1,0 +1,251 @@
+{
+  "status": "proposed-not-approved",
+  "revision": "2a16fcc18a933d1294cb220d8854e3496cff5a61",
+  "networks": {
+    "unichain": {
+      "chainId": 1301,
+      "rpc": "https://sepolia.unichain.org",
+      "collateralVault": "0x21AB80a429b48Cc4dFBE35308096930472f56954",
+      "binder": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "deploymentReceipt": "0x9f9aef17c74e69f63a3bcf455c64d53822bba128fda831b6257e3bf2028c0dfd",
+      "callbackProxy": "0x775c9B990ADe401060B78D0e98684eEf8d2466C1"
+    },
+    "base": {
+      "chainId": 84532,
+      "rpc": "https://sepolia.base.org",
+      "callbackProxy": "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+      "demoAsset": "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+      "oracle": "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680",
+      "market": null,
+      "adapter": null,
+      "attestationVerifier": null,
+      "demoFactory": null,
+      "nestedFactory": null,
+      "manager": null,
+      "liquidityVault": null,
+      "signalRegistry": null,
+      "financialReceiver": null,
+      "deploymentReceipts": {
+        "demoAsset": "0x645fa98bbd596b914bae5c9004c9463a589b3f77659ed6527257d304db06b996",
+        "oracle": "0x46ee624c1dcde7e5706d4db8a98e9d1c98f45a8368f4dd0bafef2c599fdec189"
+      }
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "rpc": "https://lasna-rpc.rnk.dev/",
+      "system": "0x8888888888888888888888888888888888888888",
+      "financialReactive": null,
+      "deploymentReceipt": null
+    }
+  },
+  "roles": {
+    "deployer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "tokenAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "marketOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "oracleOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "reactiveOperator": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "governance": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "emergencyAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "attestors": [
+      "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+      "0x6F4AE62FeE718db67652500807886052e98eA422",
+      "0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9",
+      "0x1243b643C14E8A916f3Cef5474B0E047Af0757A0"
+    ],
+    "lender": "0x7345d4b839b6567525268dc89d12301eb86ef6f6",
+    "borrower": "0x18cd37C55cDc0F4e948AAaEFC68B23F4a327a295",
+    "callbackFundingAuthority": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F"
+  },
+  "governance": {
+    "threshold": 3,
+    "validitySeconds": 1800,
+    "rotationDelaySeconds": 86400,
+    "approvedFinalityPolicy": "docs/SOURCE_FINALITY_RUNBOOK.md \u2014 operator-approved 3-of-4 policy 2026-11-28; approved RPC source selection and finalized semantics remain operational gates"
+  },
+  "funding": {
+    "m1bTransport": {
+      "separate": true,
+      "ceilingLasnaLreact": null,
+      "ceilingBaseEth": null,
+      "ceilingUnichainEth": null
+    },
+    "financialReactiveReserveWei": null,
+    "financialReceiverReserveWei": null,
+    "demoLockedTestEthWei": "1000000000000000",
+    "financialCeilings": null
+  },
+  "financialRoute": {
+    "originChainId": 84532,
+    "destinationChainId": 84532,
+    "registry": null,
+    "manager": null,
+    "reactive": null,
+    "receiver": null,
+    "callbackGas": 1000000,
+    "subscription": null,
+    "callbackGasStatus": "provisional-not-approved"
+  },
+  "scenario": {
+    "mockLenderDeposit": "1000000000",
+    "mockCommitment": "300000000",
+    "mockMarketDebt": "800000000",
+    "mockDraw": "200000000",
+    "valuationMockUsdc": "1000000000"
+  },
+  "evidence": [],
+  "proposedSigner": {
+    "publicAddress": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "accountLabel": "covenant-testnet",
+    "identityAndRoleApproved": false,
+    "freshKeystoreMatch": "confirmed by human operator using cast wallet address; not independently unlocked"
+  },
+  "approvals": {
+    "rolesAndCustody": true,
+    "finalityPolicy": true,
+    "governanceAndIncidentResponse": true,
+    "demoDependencies": false,
+    "callbackGasAndReserves": false,
+    "networkExpenditureCeilings": false,
+    "permanentCollateralLock": true,
+    "m1bLiveTransportEvidence": true,
+    "broadcastAuthorized": false
+  },
+  "approvalEvidence": {
+    "rolesAndCustody": "M4-E.1 approved listed restricted testnet roles; M4-E.2 explicitly approves covenant-testnet as immutable collateral binder; all four attestors are one developer-operated trust domain.",
+    "finalityPolicy": "M4-E.1 user approval, conditional on source receipt, event, canonical finalized block and destination binding checks; fail closed",
+    "governanceAndIncidentResponse": "M4-E.1 user approval for covenant-testnet to monitor, stop, pause, preserve evidence, reconcile costs and review recovery",
+    "demoDependencies": null,
+    "callbackGasAndReserves": null,
+    "networkExpenditureCeilings": null,
+    "permanentCollateralLock": "M4-E.1 approval of 0.001 test ETH permanent lock policy only; funding and lock transaction separately unauthorized",
+    "m1bLiveTransportEvidence": "User explicitly approved M1-B core live transport closure; deployments/transport.stage4.verified.json and deployments/transport.stage5.verified.json",
+    "broadcastAuthorized": null
+  },
+  "m1bRouteEvidence": {
+    "unichainToBase": "deployments/transport.stage4.verified.json routes.A",
+    "baseToUnichain": "deployments/transport.stage4.verified.json routes.B",
+    "baseToBase": "deployments/transport.stage4.verified.json routes.C and deployments/transport.stage5.verified.json"
+  },
+  "lastReadOnlySnapshot": {
+    "observedAtUTC": "2026-11-26 22:53 UTC (approximate)",
+    "note": "Independent latest reads; not pinned to block; not authorization or future balance guarantee. Base primary returned HTTP 403; fallback used.",
+    "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "base": {
+      "rpc": "https://base-sepolia-rpc.publicnode.com",
+      "chainId": 84532,
+      "observedBlock": 64058454,
+      "balanceWei": "0",
+      "gasPriceWei": "6000000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "unichain": {
+      "chainId": 1301,
+      "observedBlock": 68881135,
+      "balanceWei": "10000000000000000",
+      "gasPriceWei": "1500000",
+      "providerCodeBytes": 218,
+      "coefficientPer1000": 1100,
+      "extraGas": 80000,
+      "maxChargeGas": 50000
+    },
+    "lasna": {
+      "chainId": 5318007,
+      "observedBlock": 9331099,
+      "balanceWei": "4725000000000000000",
+      "gasPriceWei": "100000000000",
+      "providerCodeBytes": 239,
+      "coefficientPer1000": 1000,
+      "extraGas": 100000,
+      "maxChargeGas": 50000
+    }
+  },
+  "proposedAccounts": {
+    "covenant-testnet": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "covenant-lender": "0x7345d4b839b6567525268dc89d12301eb86ef6f6",
+    "covenant-borrower": "0x18cd37C55cDc0F4e948AAaEFC68B23F4a327a295",
+    "covenant-attestor-2": "0x6F4AE62FeE718db67652500807886052e98eA422",
+    "covenant-attestor-3": "0xAc1a3B8c98883e8F1D5e014e547cc0E109Ead4c9",
+    "covenant-attestor-4": "0x1243b643C14E8A916f3Cef5474B0E047Af0757A0"
+  },
+  "trustAssumption": "All accounts are developer-operated; four attestors constitute one operational trust domain.",
+  "accountInventoryStatus": "Public account labels and addresses confirmed by human operator from local keystores; not independently unlocked by this workflow.",
+  "financialPlanningSnapshot": {
+    "status": "estimates-not-approved",
+    "baseBlock": 64545926,
+    "unichainBlock": 68978625,
+    "lasnaBlock": 9421067,
+    "baseSignerBalanceWei": "29817981153616286",
+    "unichainSignerBalanceWei": "9934953020345562",
+    "lasnaSignerBalanceWei": "3748439934417000000",
+    "lenderBalanceWei": {
+      "base": "0",
+      "unichain": "0",
+      "lasna": "0"
+    },
+    "borrowerBalanceWei": {
+      "base": "0",
+      "unichain": "0",
+      "lasna": "0"
+    },
+    "baseNonce": 13,
+    "unichainNonce": 4,
+    "lasnaNonce": 7,
+    "predictedIfBaseNonces13Through18Uninterrupted": {
+      "demoFactory": "0x7636Ef980CAcf50A85FD0544294A25c9E022a1f6",
+      "nestedFactory": "0x525d7D8a4856008dbc7C56C2380F5D9cBC3B1bC2",
+      "manager": "0xF3EB9c4bDD0cB5B538c8B9ccb6b81A7898798E81",
+      "vault": "0x87B3E5Ca30C3CCdD6182539Ffff004dbA47F3865"
+    },
+    "note": "Predictions only; not deployments. Nonce drift invalidates them; do not wire as addresses."
+  },
+  "scopeApprovals": {
+    "testnetRoleAssignments": "approved M4-E.1 for listed testnet roles and M4-E.2 for collateral binder",
+    "testnetFinancialScenario": "approved cMOCK 1000 deposit / 300 commitment / 200 draw / 800 to 600 demo market debt / 5 percent APR; no value origination, liquidation or collateral release",
+    "signerCustody": "developer-operated single trust domain; exact operational custody procedures remain an execution gate",
+    "finality": "approved source-finality runbook subject to exact live verification and fail-closed evidence requirements",
+    "financialExpenditure": "not approved",
+    "financialBroadcast": "only Stage 1 DemoToken and DemoOracle manually by operator; full deployment not approved"
+  },
+  "stage1Proposal": {
+    "status": "authorized-and-verified",
+    "chainId": 84532,
+    "network": "base",
+    "contracts": [
+      "DemoToken",
+      "DemoOracle"
+    ],
+    "collateralVault": "binder approved; vault deployment not authorized in Stage 1",
+    "signer": "0xb108b6F40E5Aefdc8475b053BE4248C53eF07B0F",
+    "maxAggregateWei": "50000000000000",
+    "gasLimitEvidence": "Forge script multiplier 130%, re-estimate before broadcast; fee cap cannot cap L1 data fees",
+    "candidateAddressesAtNonces13And14": [
+      "0xC8013185D548990956B9b0CF4bee55C3BE3DF3e9",
+      "0xeBC6B76b9cA1dA2934D89e43bd72Ef0ba9258680"
+    ],
+    "estimates": [
+      "DemoToken: 438493 eth_estimateGas; Forge buffered 564046; synthetic L1 3939165570096 wei",
+      "DemoOracle: 204630 eth_estimateGas; Forge buffered 262419 at current nonce 13; synthetic L1 2050009044429 wei at nonce 13; re-simulate at actual nonce"
+    ],
+    "operatorFeesQuotedWei": "0",
+    "noBroadcast": true,
+    "authorization": "M4-E.2 user authorizes DemoToken and DemoOracle on Base only, max aggregate 50000000000000 wei; no reserve, participant funding or other deployments",
+    "maxUnichainWei": "0",
+    "maxLasnaWei": "0",
+    "actualBaseExpenditureWei": "13014395007204",
+    "milestoneVerdict": "M4-E.2 STAGE 1 APPROVED \u2014 FOUNDATIONAL BASE DEPLOYMENTS VERIFIED",
+    "milestoneApprovalEvidence": "User explicitly approved Stage 1 closure; remaining allowance may not be reused"
+  },
+  "stage2CollateralProposal": {
+    "status": "verified-authorization-closed",
+    "evidence": "deployments/m4e2.stage2.pending.json",
+    "signerCeilingWei": "50000000000000",
+    "chainId": 1301,
+    "broadcastAuthorized": true,
+    "scope": "Single manual Unichain CollateralVault deployment only; no funding or other deployments",
+    "actualExpenditureWei": "19890655107390",
+    "unusedAllowanceNotCarriedForward": true
+  }
+}

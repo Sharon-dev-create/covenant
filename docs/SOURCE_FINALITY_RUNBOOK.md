@@ -1,6 +1,6 @@
 # Unichain collateral source-finality runbook
 
-This is a proposed attestor procedure, not an approved finality policy or a cryptographic consensus proof. Before signing, governance must approve the source(s), finality criterion, failure rules and custody. Independent RPC providers reduce correlated operational error but may share infrastructure and do not independently prove consensus. A `finalized` RPC response is a provider assertion. Record UTC observation times, endpoint identity, raw public results, block/transaction hashes and all reconciliations. No secrets or private signing material belong in the evidence packet.
+The operator approved this testnet attestor procedure in M4-E.1 subject to its exact operational evidence checks; selection and validation of RPC sources and their finalized semantics remain required before signing. It is not a cryptographic consensus proof. Governance must resolve the source(s), failure rules and custody before use. Independent RPC providers reduce correlated operational error but may share infrastructure and do not independently prove consensus. A `finalized` RPC response is a provider assertion. Record UTC observation times, endpoint identity, raw public results, block/transaction hashes and all reconciliations. No secrets or private signing material belong in the evidence packet.
 
 ## Obtain and reconcile evidence
 

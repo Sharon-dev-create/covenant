@@ -45,3 +45,8 @@ The registry, financial Reactive orchestrator and authenticated Base receiver ar
 ## M4-A local deployment preparation
 
 See [M4 deployment readiness](M4_DEPLOYMENT_READINESS.md) and [integrated verification](INTEGRATED_VERIFICATION.md). Live M1-B verification, operational approvals, fresh fee estimates and separate broadcast authorization remain gates.
+
+
+## M1-B core transport closure — approved
+
+The operator approved core live transport verification. Stage 4 observed authenticated delivery across all three routes; Stage 5 recorded controlled failure, original operation recovery, source duplicate and authenticated destination replay rejection. Accepted duplicate reserve and source transactions remain documented. Provider callback records did not conclusively attribute recovery or replay to a particular manual request; automatic redelivery is not ruled out. This approval does not establish source finality, guaranteed delivery or a meaningful latency distribution. See `deployments/transport.stage4.verified.json`, `deployments/transport.stage5.verified.json` and `TRANSPORT_VERIFICATION.md`. Earlier prospective M1-B statements above are historical and superseded by this entry. Financial deployment, activation, roles and expenditure remain separately gated.
